@@ -42,7 +42,9 @@ final class MIDIManager {
 
     @ObservationIgnored private var client = MIDIClientRef()
     @ObservationIgnored private var port = MIDIPortRef()
+    @ObservationIgnored private var outputPort = MIDIPortRef()
     @ObservationIgnored private var connected: MIDIEndpointRef?
+    @ObservationIgnored private var destination: MIDIEndpointRef?
     @ObservationIgnored private var runningStatus: UInt8 = 0
 
     var selected: MIDISource? { sources.first { $0.id == selectedID } }
@@ -56,6 +58,7 @@ final class MIDIManager {
         MIDIInputPortCreateWithBlock(client, "Entrée" as CFString, &port) { [weak self] packets, _ in
             self?.read(packets)
         }
+        MIDIOutputPortCreate(client, "Sortie" as CFString, &outputPort)
         refresh()
     }
 
@@ -91,6 +94,7 @@ final class MIDIManager {
         } else {
             if let previousName { onSourceLost?(previousName) }
             connected = nil
+            destination = nil
             selectedID = 0
             lastNote = nil
         }
@@ -111,7 +115,43 @@ final class MIDIManager {
         if MIDIPortConnectSource(port, endpoint, nil) == noErr {
             connected = endpoint
             runningStatus = 0
+            destination = Self.matchingDestination(for: endpoint)
         }
+    }
+
+    /// La source et la destination d'un même clavier partagent en général la
+    /// même entité MIDI : c'est ce qui permet de retrouver la sortie sans
+    /// demander un second choix à l'utilisateur.
+    private static func matchingDestination(for source: MIDIEndpointRef) -> MIDIEndpointRef? {
+        var entity = MIDIEntityRef()
+        guard MIDIEndpointGetEntity(source, &entity) == noErr, entity != 0,
+              MIDIEntityGetNumberOfDestinations(entity) > 0 else { return nil }
+        let dest = MIDIEntityGetDestination(entity, 0)
+        return dest != 0 ? dest : nil
+    }
+
+    // =====================================================================
+
+    /// Joue une note en retour sur l'instrument, en réponse à une frappe
+    /// jugée juste. Un Note Off la coupe après un bref délai : la boucle ne
+    /// dépend pas de ce que fait le clavier de son côté.
+    func playNote(_ note: UInt8, velocity: UInt8, channel: UInt8) {
+        guard let destination else { return }
+        send([0x90 | (channel & 0x0F), note, velocity], to: destination)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
+            guard let self, let destination = self.destination else { return }
+            self.send([0x80 | (channel & 0x0F), note, 0], to: destination)
+        }
+    }
+
+    private func send(_ bytes: [UInt8], to destination: MIDIEndpointRef) {
+        var packet = MIDIPacket()
+        packet.length = UInt16(bytes.count)
+        withUnsafeMutableBytes(of: &packet.data) { raw in
+            for (index, byte) in bytes.enumerated() { raw[index] = byte }
+        }
+        var packetList = MIDIPacketList(numPackets: 1, packet: packet)
+        MIDISend(outputPort, destination, &packetList)
     }
 
     // =====================================================================

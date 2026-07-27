@@ -229,7 +229,7 @@ final class RhythmEngine {
             stop()
 
         case .clock:
-            guard settings.followClock, running else { return }
+            guard settings.syncStart, running else { return }
             followClock(at: time)
         }
     }
@@ -306,6 +306,16 @@ final class RhythmEngine {
             self.hits.append(Hit(time: corrected, delta: delta, notes: [note], spread: 0))
             if self.hits.count > 400 { self.hits.removeFirst(self.hits.count - 400) }
             self.openGroup = (index: self.hits.count - 1, start: time)
+
+            if self.settings.feedbackEnabled, abs(delta) <= self.tolerance {
+                switch self.settings.feedbackMode {
+                case .octave:
+                    let shifted = UInt8(min(127, Int(note) + 12))
+                    self.midi.playNote(shifted, velocity: velocity, channel: channel)
+                case .mute:
+                    self.midi.playNote(note, velocity: velocity, channel: channel)
+                }
+            }
 
             self.deltas.append(delta)
             // Fenêtre glissante : les premières notes de la séance ne doivent

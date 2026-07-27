@@ -23,6 +23,19 @@ enum Subdivision: Int, CaseIterable, Identifiable {
     }
 }
 
+/// Ce que renvoie l'app sur l'instrument quand une frappe tombe dans la
+/// zone « juste ».
+enum FeedbackMode: Int, CaseIterable, Identifiable {
+    case octave = 0, mute = 1
+    var id: Int { rawValue }
+    var label: String {
+        switch self {
+        case .octave: return "Note doublée à l'octave"
+        case .mute:   return "Note muette si imprécise"
+        }
+    }
+}
+
 /// Réglages persistants, restaurés au lancement. (EX-093)
 @Observable
 final class Settings {
@@ -39,10 +52,13 @@ final class Settings {
     var beatsPerBar: Int { didSet { store.set(beatsPerBar, forKey: K.bar) } }
     /// (EX-051)
     var clickVoice: ClickVoice { didSet { store.set(clickVoice.rawValue, forKey: K.voice) } }
-    /// Le métronome démarre sur le message Start de la boîte à rythmes. (EX-053)
+    /// Le métronome démarre sur le message Start de la boîte à rythmes, et son
+    /// tempo se cale ensuite sur l'horloge MIDI du clavier : les deux ne se
+    /// séparent pas en pratique, un seul réglage suffit. (EX-053 / EX-054)
     var syncStart: Bool { didSet { store.set(syncStart, forKey: K.syncStart) } }
-    /// Le tempo se cale sur l'horloge MIDI du clavier. (EX-054)
-    var followClock: Bool { didSet { store.set(followClock, forKey: K.followClock) } }
+    /// Un retour sonore signale la justesse de la frappe sur l'instrument.
+    var feedbackEnabled: Bool { didSet { store.set(feedbackEnabled, forKey: K.feedbackOn) } }
+    var feedbackMode: FeedbackMode { didSet { store.set(feedbackMode.rawValue, forKey: K.feedbackMode) } }
 
     // — Configuration : ce qu'on règle une fois, donc derrière l'engrenage —
     var manualAlignmentMs: Double { didSet { store.set(manualAlignmentMs, forKey: K.align) } }
@@ -83,7 +99,8 @@ final class Settings {
         beatsPerBar  = Self.int(K.bar, 4)
         clickVoice   = ClickVoice(rawValue: Self.int(K.voice, 0)) ?? .claves
         syncStart    = Self.bool(K.syncStart, false)
-        followClock  = Self.bool(K.followClock, false)
+        feedbackEnabled = Self.bool(K.feedbackOn, false)
+        feedbackMode    = FeedbackMode(rawValue: Self.int(K.feedbackMode, 0)) ?? .octave
 
         manualAlignmentMs = Self.double(K.align, 0)
         toleranceMs       = Self.double(K.tol, 20)
@@ -104,7 +121,8 @@ final class Settings {
     private enum K {
         static let bpm = "bpm", click = "click", volume = "volume"
         static let subdiv = "subdiv", bar = "bar", voice = "voice"
-        static let syncStart = "syncStart", followClock = "followClock"
+        static let syncStart = "syncStart"
+        static let feedbackOn = "feedbackOn", feedbackMode = "feedbackMode"
         static let align = "align", tol = "tol", source = "source"
         static let channel = "channel", minVel = "minVel", chord = "chord"
         static let window = "window", statsWin = "statsWin"

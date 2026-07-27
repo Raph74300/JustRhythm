@@ -19,6 +19,7 @@ struct SettingsView: View {
                 keyboardSection
                 gridSection
                 syncSection
+                feedbackSection
                 chordSection
                 alignmentSection
                 toleranceSection
@@ -133,10 +134,6 @@ struct SettingsView: View {
             Toggle("Démarrage synchronisé", isOn: Binding(
                 get: { s.syncStart }, set: { s.syncStart = $0 }))
 
-            Toggle("Suivre l'horloge du clavier", isOn: Binding(
-                get: { s.followClock }, set: { s.followClock = $0 }))
-                .disabled(!s.syncStart)
-
             if let bpm = engine.clockBpm {
                 LabeledContent("Tempo reçu") {
                     Text(String(format: "%.1f bpm", bpm)).monospacedDigit()
@@ -145,7 +142,25 @@ struct SettingsView: View {
         } header: {
             Text("Synchronisation")
         } footer: {
-            Text("Le métronome part sur le message Start de ta boîte à rythmes, et sa grille est calée exactement sur cet instant. Sans le suivi d'horloge, les deux dérivent l'une par rapport à l'autre au bout de quelques minutes : le message Start donne le départ, pas le tempo.")
+            Text("Le métronome part sur le message Start de ta boîte à rythmes, et sa grille est calée exactement sur cet instant. Il suit ensuite l'horloge MIDI du clavier pour ne pas dériver : le message Start donne le départ, pas le tempo.")
+        }
+    }
+
+    /// Retour sonore sur l'instrument quand la frappe est juste.
+    private var feedbackSection: some View {
+        Section {
+            Toggle("Récompense sonore", isOn: Binding(
+                get: { s.feedbackEnabled }, set: { s.feedbackEnabled = $0 }))
+
+            Picker("Mode", selection: Binding(
+                get: { s.feedbackMode }, set: { s.feedbackMode = $0 })) {
+                ForEach(FeedbackMode.allCases) { Text($0.label).tag($0) }
+            }
+            .disabled(!s.feedbackEnabled)
+        } header: {
+            Text("Récompense")
+        } footer: {
+            Text("En mode octave, une note s'ajoute un octave au-dessus quand la frappe est dans la zone « juste » — pense à laisser le Local Control activé sur l'instrument pour continuer à entendre tes propres notes. En mode muet, c'est l'instrument qui reste silencieux tant que la frappe n'est pas juste ; ça suppose de couper le Local Control, sinon il joue déjà tout seul.")
         }
     }
 
