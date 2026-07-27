@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Aucun suivi publicitaire, aucun domaine de suivi. -->
+    <key>NSPrivacyTracking</key>
+    <false/>
+    <key>NSPrivacyTrackingDomains</key>
+    <array/>
+
+    <!-- Aucune donnée collectée : ni analytique, ni identifiant, ni contenu. -->
+    <key>NSPrivacyCollectedDataTypes</key>
+    <array/>
+
+    <!-- API à motif obligatoire réellement utilisées par l'application. -->
+    <key>NSPrivacyAccessedAPITypes</key>
+    <array>
+        <dict>
+            <!-- UserDefaults : réglages de l'utilisateur, jamais lus par autrui. -->
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <string>CA92.1</string>
+            </array>
+        </dict>
+        <dict>
+            <!-- mach_absolute_time : base de temps de la mesure rythmique. -->
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategorySystemBootTime</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <string>35F9.1</string>
+            </array>
+        </dict>
+    </array>
+</dict>
+</plist>

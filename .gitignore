@@ -1,0 +1,8 @@
+# Archives de build
+*.zip
+
+# Xcode
+xcuserdata/
+*.xcuserstate
+DerivedData/
+.DS_Store
