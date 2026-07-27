@@ -7,10 +7,10 @@ enum Subdivision: Int, CaseIterable, Identifiable {
     var id: Int { rawValue }
     var label: String {
         switch self {
-        case .quarter:   return "Noires"
-        case .eighth:    return "Croches"
-        case .triplet:   return "Triolets"
-        case .sixteenth: return "Doubles-croches"
+        case .quarter:   return String(localized: "Quarter notes")
+        case .eighth:    return String(localized: "Eighth notes")
+        case .triplet:   return String(localized: "Triplets")
+        case .sixteenth: return String(localized: "Sixteenth notes")
         }
     }
     var shortLabel: String {
@@ -30,8 +30,8 @@ enum FeedbackMode: Int, CaseIterable, Identifiable {
     var id: Int { rawValue }
     var label: String {
         switch self {
-        case .octave: return "Note doublée à l'octave"
-        case .mute:   return "Note muette si imprécise"
+        case .octave: return String(localized: "Note doubled an octave up")
+        case .mute:   return String(localized: "Note muted if inaccurate")
         }
     }
 }

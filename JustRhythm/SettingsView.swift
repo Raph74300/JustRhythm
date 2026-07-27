@@ -26,7 +26,7 @@ struct SettingsView: View {
                 dataSection
                 aboutSection
             }
-            .navigationTitle("Réglages")
+            .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -41,11 +41,11 @@ struct SettingsView: View {
     private var keyboardSection: some View {
         Section {
             if engine.midi.sources.isEmpty {
-                LabeledContent("Clavier") {
-                    Text("Aucun détecté").foregroundStyle(.secondary)
+                LabeledContent("Keyboard") {
+                    Text("None detected").foregroundStyle(.secondary)
                 }
             } else {
-                Picker("Clavier", selection: Binding(
+                Picker("Keyboard", selection: Binding(
                     get: { engine.midi.selectedID },
                     set: { engine.midi.connect(uniqueID: $0); s.lastSourceID = $0 })
                 ) {
@@ -54,31 +54,33 @@ struct SettingsView: View {
             }
 
             if let note = engine.midi.lastNote {
-                LabeledContent("Dernière note", value: note)
+                LabeledContent("Last note", value: note)
                     .monospacedDigit()
             }
 
-            Picker("Canal écouté", selection: Binding(
+            Picker("Listened channel", selection: Binding(
                 get: { s.midiChannel }, set: { s.midiChannel = $0 })) {
-                Text("Tous").tag(0)
-                ForEach(1...16, id: \.self) { Text("Canal \($0)").tag($0) }
+                Text("All").tag(0)
+                ForEach(1...16, id: \.self) { n in
+                    Text(String(format: NSLocalizedString("Channel %d", comment: ""), n)).tag(n)
+                }
             }
 
             Stepper(value: Binding(get: { s.minVelocity },
                                    set: { s.minVelocity = $0 }), in: 1...127) {
-                LabeledContent("Vélocité minimale") {
+                LabeledContent("Minimum velocity") {
                     Text("\(s.minVelocity)").monospacedDigit()
                 }
             }
         } header: {
-            Text("Entrée MIDI")
+            Text("MIDI Input")
         } footer: {
             if engine.midi.sources.isEmpty {
-                Text("Branche le clavier en USB. S'il passe par une interface, vérifie qu'elle est alimentée.")
+                Text("Connect the keyboard via USB. If it goes through an interface, make sure it's powered.")
             } else if engine.midi.selected?.isBluetooth == true {
-                Text("Cette source est en Bluetooth : elle ajoute 10 à 20 ms avec une gigue variable. La moyenne en sera faussée ; la régularité, elle, reste exacte. Préfère l'USB.")
+                Text("This source is Bluetooth: it adds 10 to 20 ms with variable jitter. The average will be skewed; regularity, though, stays accurate. Prefer USB.")
             } else {
-                Text("Joue une note : elle doit apparaître ci-dessus même métronome à l'arrêt.")
+                Text("Play a note: it should appear above, even with the metronome stopped.")
             }
         }
     }
@@ -86,27 +88,27 @@ struct SettingsView: View {
     /// La grille sur laquelle les notes sont jugées. (EX-041 / EX-042)
     private var gridSection: some View {
         Section {
-            Picker("Grille de référence", selection: Binding(
+            Picker("Reference grid", selection: Binding(
                 get: { s.subdivision },
                 set: { s.subdivision = $0; engine.reanchor() })) {
                 ForEach(Subdivision.allCases) { Text($0.label).tag($0) }
             }
 
-            Picker("Temps par mesure", selection: Binding(
+            Picker("Beats per bar", selection: Binding(
                 get: { s.beatsPerBar }, set: { s.beatsPerBar = $0 })) {
-                Text("Aucun accent").tag(0)
+                Text("No accent").tag(0)
                 ForEach(2...12, id: \.self) { Text("\($0)").tag($0) }
             }
 
-            Picker("Timbre du clic", selection: Binding(
+            Picker("Click tone", selection: Binding(
                 get: { s.clickVoice },
                 set: { s.clickVoice = $0; engine.testClick() })) {
                 ForEach(ClickVoice.allCases) { Text($0.label).tag($0) }
             }
         } header: {
-            Text("Grille et son")
+            Text("Grid & sound")
         } footer: {
-            Text(s.clickVoice.hint + " Le clic ne sonne que sur les temps, jamais sur les subdivisions.")
+            Text(s.clickVoice.hint + String(localized: " The click only sounds on the beat, never on subdivisions."))
         }
     }
 
@@ -114,7 +116,7 @@ struct SettingsView: View {
     private var chordSection: some View {
         Section {
             VStack(alignment: .leading, spacing: 6) {
-                LabeledContent("Fenêtre d'accord") {
+                LabeledContent("Chord window") {
                     Text("\(Int(s.chordWindowMs)) ms").monospacedDigit()
                 }
                 Slider(value: Binding(get: { s.chordWindowMs },
@@ -122,34 +124,34 @@ struct SettingsView: View {
                        in: 0...80, step: 5)
             }
         } header: {
-            Text("Accords")
+            Text("Chords")
         } footer: {
-            Text("Les notes reçues dans cette fenêtre comptent pour un seul événement, daté sur la première, et l'application affiche leur étalement. À 0, chaque note est comptée séparément. Une fenêtre large avale les notes répétées rapides : descends-la si tu travailles des traits.")
+            Text("Notes received within this window count as a single event, timestamped on the first one, and the app shows their spread. At 0, each note is counted separately. A wide window swallows fast repeated notes: lower it if you're working on rapid passages.")
         }
     }
 
     /// Synchronisation sur la boîte à rythmes du clavier. (EX-053 / EX-054)
     private var syncSection: some View {
         Section {
-            Toggle("Démarrage synchronisé", isOn: Binding(
+            Toggle("Synced start", isOn: Binding(
                 get: { s.syncStart }, set: { s.syncStart = $0 }))
 
             if let bpm = engine.clockBpm {
-                LabeledContent("Tempo reçu") {
+                LabeledContent("Tempo received") {
                     Text(String(format: "%.1f bpm", bpm)).monospacedDigit()
                 }
             }
         } header: {
-            Text("Synchronisation")
+            Text("Synchronization")
         } footer: {
-            Text("Le métronome part sur le message Start de ta boîte à rythmes, et sa grille est calée exactement sur cet instant. Il suit ensuite l'horloge MIDI du clavier pour ne pas dériver : le message Start donne le départ, pas le tempo.")
+            Text("The metronome starts on your drum machine's Start message, and its grid is anchored exactly on that instant. It then follows the keyboard's MIDI clock to avoid drifting: the Start message gives the downbeat, not the tempo.")
         }
     }
 
     /// Retour sonore sur l'instrument quand la frappe est juste.
     private var feedbackSection: some View {
         Section {
-            Toggle("Récompense sonore", isOn: Binding(
+            Toggle("Sound reward", isOn: Binding(
                 get: { s.feedbackEnabled }, set: { s.feedbackEnabled = $0 }))
 
             Picker("Mode", selection: Binding(
@@ -158,22 +160,22 @@ struct SettingsView: View {
             }
             .disabled(!s.feedbackEnabled)
         } header: {
-            Text("Récompense")
+            Text("Reward")
         } footer: {
-            Text("En mode octave, une note s'ajoute un octave au-dessus quand la frappe est dans la zone « juste » — pense à laisser le Local Control activé sur l'instrument pour continuer à entendre tes propres notes. En mode muet, c'est l'instrument qui reste silencieux tant que la frappe n'est pas juste ; ça suppose de couper le Local Control, sinon il joue déjà tout seul.")
+            Text("In octave mode, a note is added an octave higher when the hit lands in the “right” zone — remember to leave Local Control on so you keep hearing your own notes. In mute mode, the instrument stays silent until the hit is accurate; that requires turning Local Control off, otherwise it's already sounding on its own.")
         }
     }
 
     private var alignmentSection: some View {
         Section {
-            LabeledContent("Compensation automatique") {
+            LabeledContent("Automatic compensation") {
                 Text("\(Int(engine.outputLatency * 1000)) ms")
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
             }
 
             VStack(alignment: .leading, spacing: 6) {
-                LabeledContent("Correction manuelle") {
+                LabeledContent("Manual correction") {
                     Text("\(Int(s.manualAlignmentMs)) ms").monospacedDigit()
                 }
                 Slider(value: Binding(get: { s.manualAlignmentMs },
@@ -181,18 +183,18 @@ struct SettingsView: View {
                        in: -60...60, step: 1)
             }
 
-            Button("Tester le son") { engine.testClick() }
+            Button("Test the sound") { engine.testClick() }
         } header: {
-            Text("Alignement")
+            Text("Alignment")
         } footer: {
-            Text("Le clic est avancé du retard mesuré de la sortie audio, pour être entendu sur le temps. La correction manuelle s'y ajoute. Ne la règle jamais sur ton ressenti : on anticipe naturellement de 10 à 20 ms, et tu inscrirais ce défaut dans le zéro de l'appareil.\n\nMéthode recommandée : active le démarrage synchronisé, lance la boîte à rythmes du clavier et écoute les deux clics ensemble. Règle la correction manuelle jusqu'à ce qu'ils se confondent. Le son de la boîte à rythmes et celui de tes notes empruntent le même chemin de sortie : les aligner annule la différence entre les deux chaînes audio, ce que le curseur à l'aveugle ne fait que deviner. Il reste le temps de balayage du clavier, 3 à 10 ms, hors de portée de cette méthode.")
+            Text("The click is advanced by the measured audio output delay, so it's heard on the beat. The manual correction adds to that. Never set it by feel: you naturally anticipate by 10 to 20 ms, and you'd bake that bias into the device's zero point.\n\nRecommended method: turn on synced start, start the keyboard's drum machine, and listen to both clicks together. Adjust the manual correction until they merge. The drum machine's sound and your notes' sound take the same output path: aligning them cancels out the difference between the two audio chains, which the blind slider can only guess at. What remains is the keyboard's scan time, 3 to 10 ms, beyond the reach of this method.")
         }
     }
 
     private var toleranceSection: some View {
         Section {
             VStack(alignment: .leading, spacing: 6) {
-                LabeledContent("Zone « juste »") {
+                LabeledContent("“Right” zone") {
                     Text("± \(Int(s.toleranceMs)) ms").monospacedDigit()
                 }
                 Slider(value: Binding(get: { s.toleranceMs },
@@ -202,7 +204,7 @@ struct SettingsView: View {
 
             // (EX-067)
             VStack(alignment: .leading, spacing: 6) {
-                LabeledContent("Échelle affichée") {
+                LabeledContent("Displayed scale") {
                     Text("± \(Int(s.windowMs)) ms").monospacedDigit()
                 }
                 Slider(value: Binding(get: { s.windowMs },
@@ -212,7 +214,7 @@ struct SettingsView: View {
 
             // (EX-084)
             VStack(alignment: .leading, spacing: 6) {
-                LabeledContent("Fenêtre statistique") {
+                LabeledContent("Statistics window") {
                     Text("\(s.statsWindow) notes").monospacedDigit()
                 }
                 Slider(value: Binding(get: { Double(s.statsWindow) },
@@ -220,24 +222,24 @@ struct SettingsView: View {
                        in: 20...1000, step: 10)
             }
         } header: {
-            Text("Mesure")
+            Text("Measurement")
         } footer: {
-            Text("La zone « juste » donne la largeur de la bande verte et la base du pourcentage. L'échelle resserre ou élargit le graphe sans changer la mesure. La fenêtre statistique limite le bilan aux dernières notes, pour qu'un début de séance hésitant ne le plombe pas indéfiniment.")
+            Text("The “right” zone sets the width of the green band and the basis for the percentage. The scale narrows or widens the graph without changing the measurement. The statistics window limits the summary to the most recent notes, so a hesitant start to a session doesn't weigh it down indefinitely.")
         }
     }
 
     private var dataSection: some View {
         Section {
-            Button("Effacer les statistiques", role: .destructive) {
+            Button("Clear statistics", role: .destructive) {
                 confirmReset = true
             }
-            .confirmationDialog("Effacer les statistiques de la séance ?",
+            .confirmationDialog("Clear this session's statistics?",
                                 isPresented: $confirmReset, titleVisibility: .visible) {
-                Button("Effacer", role: .destructive) { engine.resetStats() }
-                Button("Annuler", role: .cancel) { }
+                Button("Clear", role: .destructive) { engine.resetStats() }
+                Button("Cancel", role: .cancel) { }
             }
         } footer: {
-            Text("Les compteurs repartent de zéro. Le métronome n'est pas arrêté.")
+            Text("The counters reset to zero. The metronome isn't stopped.")
         }
     }
 
@@ -245,7 +247,7 @@ struct SettingsView: View {
         Section {
             LabeledContent("Version", value: Bundle.main.shortVersion)
         } footer: {
-            Text("Aucune donnée ne quitte l'appareil. Aucun compte, aucune mesure d'audience, aucun accès au microphone.")
+            Text("No data leaves the device. No account, no audience measurement, no microphone access.")
         }
     }
 }

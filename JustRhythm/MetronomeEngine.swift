@@ -70,7 +70,7 @@ final class MetronomeEngine {
         sampleRate = session.sampleRate > 0 ? session.sampleRate : 48_000
         guard let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 2) else {
             throw NSError(domain: "JustRhythm", code: 1,
-                          userInfo: [NSLocalizedDescriptionKey: "Format audio indisponible"])
+                          userInfo: [NSLocalizedDescriptionKey: String(localized: "Audio format unavailable")])
         }
 
         banks = [:]

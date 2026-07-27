@@ -15,21 +15,21 @@ enum ClickVoice: Int, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .claves:    return "Claves"
-        case .woodblock: return "Woodblock"
-        case .click:     return "Clic"
-        case .hihat:     return "Charleston"
-        case .kick:      return "Grosse caisse"
+        case .claves:    return String(localized: "Claves")
+        case .woodblock: return String(localized: "Woodblock")
+        case .click:     return String(localized: "Click")
+        case .hihat:     return String(localized: "Hi-hat")
+        case .kick:      return String(localized: "Kick drum")
         }
     }
 
     var hint: String {
         switch self {
-        case .claves:    return "L'attaque la plus nette des cinq. Le meilleur choix pour du travail fin et pour régler l'alignement."
-        case .woodblock: return "Bois plus grave que les claves, moins agressif sur la durée."
-        case .click:     return "Le clic de métronome classique. Neutre, se perd un peu dans un piano joué fort."
-        case .hihat:     return "Bruit non accordé : ne se mélange à aucune note du piano."
-        case .kick:      return "Se sent plus qu'il ne s'entend. Son attaque est perçue plus tard qu'elle ne survient : ne t'en sers pas pour régler l'alignement. Peu audible sur le haut-parleur de l'iPhone, qui ne descend pas dans le grave."
+        case .claves:    return String(localized: "The sharpest attack of the five. The best choice for fine work and for setting the alignment.")
+        case .woodblock: return String(localized: "Deeper wood tone than the claves, less aggressive over time.")
+        case .click:     return String(localized: "The classic metronome click. Neutral, gets a bit lost under a loudly played piano.")
+        case .hihat:     return String(localized: "Unpitched noise: it never blends with any piano note.")
+        case .kick:      return String(localized: "Felt more than heard. Its attack is perceived later than it actually occurs, so don't use it to set the alignment. Barely audible on the iPhone speaker, which doesn't reach low frequencies.")
         }
     }
 

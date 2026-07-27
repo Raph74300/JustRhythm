@@ -69,7 +69,7 @@ final class RhythmEngine {
         }
         midi.onSourceLost = { [weak self] name in
             guard let self, self.running else { return }
-            self.message = "« \(name) » s'est déconnecté."
+            self.message = String(format: NSLocalizedString("“%@” disconnected.", comment: ""), name)
         }
         midi.onTransport = { [weak self] time, message in
             DispatchQueue.main.async { self?.handleTransport(time: time, message: message) }
@@ -77,10 +77,10 @@ final class RhythmEngine {
         metronome.onInterruption = { [weak self] resumed in
             guard let self else { return }
             if resumed {
-                self.message = "Séance reprise après une interruption."
+                self.message = String(localized: "Session resumed after an interruption.")
             } else {
                 self.stop()
-                self.message = "Séance interrompue par le système."
+                self.message = String(localized: "Session interrupted by the system.")
             }
         }
         midi.start()
@@ -106,12 +106,12 @@ final class RhythmEngine {
         do {
             try metronome.start()
         } catch {
-            message = "Audio indisponible : \(error.localizedDescription)"
+            message = String(format: NSLocalizedString("Audio unavailable: %@", comment: ""), error.localizedDescription)
             return
         }
         outputLatency = metronome.outputLatency
         message = outputLatency > 0.060
-            ? "Sortie audio en retard de \(Int(outputLatency * 1000)) ms — sortie sans fil probable, la moyenne sera faussée."
+            ? String(format: NSLocalizedString("Audio output delayed by %d ms — likely a wireless output, which will skew the average.", comment: ""), Int(outputLatency * 1000))
             : nil
 
         hits.removeAll(); beats.removeAll(); deltas.removeAll()
@@ -172,7 +172,7 @@ final class RhythmEngine {
             outputLatency = metronome.outputLatency
             message = nil
         } catch {
-            message = "Audio indisponible : \(error.localizedDescription)"
+            message = String(format: NSLocalizedString("Audio unavailable: %@", comment: ""), error.localizedDescription)
             return
         }
         metronome.playTestClick(voice: settings.clickVoice, volume: Float(settings.volume))

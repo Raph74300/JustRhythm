@@ -23,16 +23,16 @@ struct ScopeView: View {
                 draw(context: context, size: size, now: now)
             }
         }
-        .accessibilityLabel("Graphe de justesse rythmique")
+        .accessibilityLabel(String(localized: "Rhythm accuracy graph"))
         .accessibilityValue(summary)
     }
 
     private var summary: String {
-        guard let delta = engine.lastDelta else { return "aucune note" }
+        guard let delta = engine.lastDelta else { return String(localized: "no note") }
         let ms = Int((delta * 1000).rounded())
-        let sense = abs(delta) <= engine.tolerance ? "dans le temps"
-                  : (delta < 0 ? "en avance" : "en retard")
-        return "\(abs(ms)) millisecondes, \(sense)"
+        let sense = abs(delta) <= engine.tolerance ? String(localized: "on time")
+                  : (delta < 0 ? String(localized: "early") : String(localized: "late"))
+        return String(format: NSLocalizedString("%d milliseconds, %@", comment: ""), abs(ms), sense)
     }
 
     // =====================================================================

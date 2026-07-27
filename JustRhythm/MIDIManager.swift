@@ -55,10 +55,10 @@ final class MIDIManager {
         MIDIClientCreateWithBlock("JustRhythm" as CFString, &client) { [weak self] _ in
             DispatchQueue.main.async { self?.refresh() }
         }
-        MIDIInputPortCreateWithBlock(client, "Entrée" as CFString, &port) { [weak self] packets, _ in
+        MIDIInputPortCreateWithBlock(client, "Input" as CFString, &port) { [weak self] packets, _ in
             self?.read(packets)
         }
-        MIDIOutputPortCreate(client, "Sortie" as CFString, &outputPort)
+        MIDIOutputPortCreate(client, "Output" as CFString, &outputPort)
         refresh()
     }
 
@@ -222,11 +222,16 @@ final class MIDIManager {
 }
 
 enum NoteName {
-    private static let names = ["Do", "Do♯", "Ré", "Ré♯", "Mi", "Fa",
-                                "Fa♯", "Sol", "Sol♯", "La", "La♯", "Si"]
-    /// Notation française. (EX-003)
+    private static let solfege = ["Do", "Do♯", "Ré", "Ré♯", "Mi", "Fa",
+                                  "Fa♯", "Sol", "Sol♯", "La", "La♯", "Si"]
+    private static let letters = ["C", "C♯", "D", "D♯", "E", "F",
+                                  "F♯", "G", "G♯", "A", "A♯", "B"]
+
+    /// Solfège en français, notation lettrée pour toutes les autres langues. (EX-003)
     static func of(_ midiNote: UInt8) -> String {
         let n = Int(midiNote)
+        let isFrench = Locale.current.language.languageCode?.identifier == "fr"
+        let names = isFrench ? solfege : letters
         return names[n % 12] + String(n / 12 - 1)
     }
 }

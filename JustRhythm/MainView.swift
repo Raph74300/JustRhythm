@@ -22,7 +22,7 @@ struct MainView: View {
                         } label: {
                             Image(systemName: "gearshape")
                         }
-                        .accessibilityLabel("Réglages")
+                        .accessibilityLabel(String(localized: "Settings"))
                     }
                 }
         }
@@ -84,7 +84,8 @@ struct MainView: View {
                         .foregroundStyle(currentTint)
                         .contentTransition(.numericText())
                     Spacer()
-                    Text("\(Int(engine.settings.bpm)) bpm · \(engine.settings.subdivision.shortLabel)")
+                    Text(String(format: NSLocalizedString("%d bpm · %@", comment: ""),
+                               Int(engine.settings.bpm), engine.settings.subdivision.shortLabel))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -94,7 +95,8 @@ struct MainView: View {
 
                 HStack {
                     Text(engine.stats.count > 0
-                         ? "\(engine.stats.count) notes · \(Int(engine.stats.inZone)) %"
+                         ? String(format: NSLocalizedString("%d notes · %d %%", comment: ""),
+                                  engine.stats.count, Int(engine.stats.inZone))
                          : "—")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
@@ -155,7 +157,8 @@ struct MainView: View {
 
     private var chordDetail: String? {
         guard let hit = engine.hits.last, hit.notes.count > 1 else { return nil }
-        return "\(hit.notes.count) notes · étalement \(Int((hit.spread * 1000).rounded())) ms"
+        return String(format: NSLocalizedString("%d notes · spread %d ms", comment: ""),
+                      hit.notes.count, Int((hit.spread * 1000).rounded()))
     }
 
     private var displayValue: String {
@@ -176,10 +179,10 @@ struct MainView: View {
 
     private var verdict: String {
         guard let delta = engine.lastDelta else {
-            return engine.running ? "joue sur les temps" : "millisecondes"
+            return engine.running ? String(localized: "play on the beat") : String(localized: "milliseconds")
         }
-        if abs(delta) <= engine.tolerance { return "dans le temps" }
-        return delta < 0 ? "en avance" : "en retard"
+        if abs(delta) <= engine.tolerance { return String(localized: "on time") }
+        return delta < 0 ? String(localized: "early") : String(localized: "late")
     }
 
     // =====================================================================
@@ -190,7 +193,7 @@ struct MainView: View {
         VStack(spacing: 14) {
             HStack {
                 Label {
-                    Text(engine.midi.selected?.name ?? "Aucun clavier")
+                    Text(engine.midi.selected?.name ?? String(localized: "No keyboard"))
                         .lineLimit(1)
                 } icon: {
                     Image(systemName: engine.midi.sources.isEmpty
@@ -200,7 +203,7 @@ struct MainView: View {
                 .foregroundStyle(engine.midi.sources.isEmpty ? .secondary : .primary)
 
                 if engine.settings.syncStart {
-                    Label(engine.externallyTriggered ? "synchronisé" : "en attente du Start",
+                    Label(engine.externallyTriggered ? "synced" : "waiting for Start",
                           systemImage: engine.externallyTriggered
                               ? "link.circle.fill" : "link.circle")
                         .font(.caption2)
@@ -241,7 +244,7 @@ struct MainView: View {
                          ?? "\(Int(engine.settings.bpm))")
                         .font(.system(.title2, design: .rounded, weight: .medium))
                         .monospacedDigit()
-                    Text(engine.clockBpm != nil ? "bpm reçu" : "bpm")
+                    Text(engine.clockBpm != nil ? "bpm received" : "bpm")
                         .font(.caption2).foregroundStyle(.secondary)
                 }
                 .frame(width: 78)
@@ -258,7 +261,7 @@ struct MainView: View {
                 Spacer()
 
                 Button { engine.toggle() } label: {
-                    Label(engine.running ? "Arrêter" : "Démarrer",
+                    Label(engine.running ? "Stop" : "Start",
                           systemImage: engine.running ? "stop.fill" : "play.fill")
                         .frame(minWidth: 96)
                 }
@@ -283,7 +286,7 @@ struct MainView: View {
                     .foregroundStyle(.secondary)
                     .onTapGesture { engine.settings.clickEnabled.toggle() }
                     .accessibilityLabel(engine.settings.clickEnabled
-                                        ? "Couper le clic" : "Activer le clic")
+                                        ? String(localized: "Mute the click") : String(localized: "Enable the click"))
 
                 Slider(value: Binding(get: { engine.settings.volume },
                                       set: { engine.settings.volume = $0 }),
@@ -322,19 +325,19 @@ struct StatsGrid: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            cell("Notes", value: "\(engine.stats.count)")
+            cell(String(localized: "Notes"), value: "\(engine.stats.count)")
             divider
-            cell("Moyenne",
+            cell(String(localized: "Average"),
                  value: hasData ? signed(engine.stats.mean) : "–",
                  unit: hasData ? "ms" : nil)
             divider
-            cell("Régularité",
+            cell(String(localized: "Regularity"),
                  value: hasData ? String(format: "%.1f", engine.stats.sd * 1000) : "–",
                  unit: hasData ? "ms" : nil,
                  tint: regularityTint,
                  caption: hasData ? String(format: "%.1f %%", ratio) : nil)
             divider
-            cell("Dans la zone",
+            cell(String(localized: "In the zone"),
                  value: hasData ? "\(Int(engine.stats.inZone))" : "–",
                  unit: hasData ? "%" : nil)
         }
