@@ -1,9 +1,7 @@
-{\rtf1\ansi\ansicpg1252\cocoartf2822
-\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fnil\fcharset0 Menlo-Regular;}
-{\colortbl;\red255\green255\blue255;\red0\green0\blue0;}
-{\*\expandedcolortbl;;\csgray\c0;}
-\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+#!/bin/sh
+# Aplatit une icône PNG en RGB pur (sans canal alpha) avant import dans
+# l'Asset Catalog — l'App Store rejette une icône 1024×1024 avec transparence,
+# même invisible. Voir Tutorial/guide-publication-app-store.md §6.
 
-\f0\fs22 \cf2 \CocoaLigature0 sips -s format jpeg -s formatOptions best mon-image.png --out /tmp/plat.jpg\
-sips -s format png -z 1024 1024 /tmp/plat.jpg --out AppIcon.png  }
+sips -s format jpeg -s formatOptions best mon-image.png --out /tmp/plat.jpg
+sips -s format png -z 1024 1024 /tmp/plat.jpg --out AppIcon.png
