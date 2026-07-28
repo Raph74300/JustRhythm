@@ -100,6 +100,8 @@ Comment savoir quelles API sont utilisées : chercher dans le code (`Cmd+Shift+F
 
 Sans cette seconde étape, Xcode signale : *"All interface orientations must be supported unless the app requires full screen."*
 
+**Note** : Xcode peut aussi afficher un warning *"'UIRequiresFullScreen' has been deprecated starting in iOS 26.0 and will be ignored..."* une fois la clé ajoutée. C'est bénin — un avertissement de dépréciation future, pas une erreur. Le build réussit quand même et l'upload passe normalement. À revisiter seulement si Apple change vraiment ce comportement dans une future mise à jour du projet.
+
 **Icône** : 1024×1024 px, **sans canal alpha** (pas de transparence, même invisible). Si exportée depuis Figma/Sketch/Photoshop, vérifier qu'elle est aplatie en RGB pur avant import dans l'Asset Catalog.
 
 ---
@@ -137,9 +139,40 @@ Délai habituel avant que le build apparaisse dans TestFlight sur App Store Conn
 
 ---
 
+## 7bis. Conformité chiffrement (popup TestFlight)
+
+Au premier build visible dans TestFlight, App Store Connect affiche presque toujours une popup **"Documents sur le chiffrement des apps"** avant de laisser tester le build.
+
+Pour une app sans serveur, sans communication réseau chiffrée et sans bibliothèque crypto personnalisée (cas de JustRhythm) : cocher **"Aucun des algorithmes mentionnés ci-dessus"** → **Enregistrer**. Aucun document à fournir dans ce cas.
+
+**Pour ne plus jamais revoir cette popup sur les prochains builds**, ajouter dans `Info.plist` (clic droit → Open As → Source Code, juste avant `</dict>` final) :
+
+```xml
+<key>ITSAppUsesNonExemptEncryption</key>
+<false/>
+```
+
+Apple lira directement cette clé aux futurs uploads sans reposer la question.
+
+---
+
 ## 8. TestFlight — la vraie phase de test
 
-- Installer l'app soi-même via l'app TestFlight sur son propre iPhone
+**Étape souvent oubliée : s'ajouter soi-même comme testeur.**
+Un build "Prêt à soumettre" dans TestFlight n'est **pas** automatiquement installable, même par le développeur lui-même — sans groupe de testeurs, personne n'est invité.
+
+1. App Store Connect → onglet **TestFlight** → barre latérale → **+** à côté de **"TESTS INTERNES"**
+2. Créer un groupe (ex. "Interne")
+3. Ajouter son propre Apple ID comme testeur (celui utilisé sur son iPhone)
+4. Sélectionner le build (ex. `1.0 (1)`) pour ce groupe
+5. Une invitation arrive par email ou directement dans l'app TestFlight
+
+Ensuite, sur l'iPhone :
+1. Installer l'app **TestFlight** (App Store) si pas déjà fait
+2. Se connecter avec le même Apple ID
+3. L'app apparaît avec un bouton **Installer**
+
+**Une fois installée** :
 - Faire une **vraie séance d'usage**, pas juste ouvrir l'app deux secondes — c'est là qu'on découvre ce qui cloche en conditions réelles
 - Point de vigilance identifié pour JustRhythm : l'app est **inutilisable sans clavier MIDI**. Un examinateur Apple qui l'ouvre sans matériel connecté ne verra qu'un écran qui ne fait rien. Deux actions :
   - Soigner l'état "aucun clavier détecté" — c'est probablement le seul écran que l'examinateur verra
@@ -147,13 +180,50 @@ Délai habituel avant que le build apparaisse dans TestFlight sur App Store Conn
 
 ---
 
-## 9. Soumission finale
+## 9. Soumission finale sur l'App Store
 
-- Remplir la fiche complète : captures d'écran (formats exacts affichés par App Store Connect selon la taille d'appareil), description, catégorie (ex. **Musique**)
-- Fiche de collecte de données : confirmer "aucune donnée" si toujours vrai
-- Soumettre pour revue
-- Délai habituel : quelques jours
-- Un ou deux rejets sur des détails de fiche (métadonnées, captures, wording) sont fréquents et normaux à la première soumission — pas un signal d'alarme
+Une fois la séance TestFlight faite et l'état "aucun clavier détecté" jugé satisfaisant, retour sur `appstoreconnect.apple.com` → app → onglet **Distribution** (App iOS Version 1.0).
+
+### 9.1 Captures d'écran
+- Onglet **App Store** → section **Aperçus et captures d'écran**
+- Formats exacts imposés selon la taille d'appareil, affichés directement à l'écran (ex. iPhone 6,5" : 1242×2688px ou 2778×1284px)
+- Seules les **3 premières** captures sont utilisées sur la fiche d'installation — les glisser dans l'ordre le plus parlant en premier
+- Les captures servent pour **toutes les langues et tailles d'écran** déclarées — un seul jeu à préparer si une seule langue est active
+- Peuvent être prises directement depuis TestFlight sur l'iPhone (Cmd+captures d'écran classiques du téléphone) ou via le simulateur Xcode en Release
+
+### 9.2 Description, mots-clés, catégorie
+- **Informations sur l'app** (barre latérale gauche, sous "Général") :
+  - Catégorie principale : **Musique** (ou catégorie pertinente pour l'app suivante)
+  - Nom, sous-titre si utilisé
+- **Description** : dans la fiche de version, texte de présentation (4000 caractères max), rédigé dans la langue principale déclarée
+- **Mots-clés** : liste séparée par virgules, 100 caractères max au total — pas de doublons avec les mots déjà dans le nom/sous-titre (Apple les indexe déjà)
+- **URL de support** et **URL marketing** (optionnelle) : un lien minimal suffit (ex. une page GitHub, un site personnel) — obligatoire d'avoir au moins l'URL de support
+
+### 9.3 App Review Information
+- Toujours dans la fiche de version, section **App Review Information**
+- **Contact** : nom, téléphone, email — le canal si Apple a besoin de joindre le développeur pendant la revue
+- **Notes** (le champ le plus important pour JustRhythm) : expliquer en anglais que l'app nécessite un clavier MIDI externe pour être fonctionnelle, et que l'écran "aucun clavier détecté" est le comportement attendu sans matériel connecté
+- Pas de compte de démonstration nécessaire pour une app sans login
+
+### 9.4 Sélectionner le build
+- Section **Build** de la fiche de version → **+** ou **Sélectionner un build** → choisir le build déjà validé en TestFlight (ex. `1.0 (1)`)
+
+### 9.5 Confidentialité et export
+- Vérifier une dernière fois que **Confidentialité de l'app** est toujours à "Aucune donnée collectée" (§5) — cette fiche est indépendante du build et ne se remplit pas automatiquement
+- La question de chiffrement export (§7bis) ne se repose pas si `ITSAppUsesNonExemptEncryption` est bien dans l'Info.plist
+
+### 9.6 Prix et disponibilité
+- Onglet séparé **Tarification et disponibilité** (ou dans le menu de gauche selon la version d'App Store Connect)
+- Gratuit ou payant, pays de disponibilité (Monde entier par défaut convient dans la plupart des cas)
+
+### 9.7 Soumettre
+- Bouton **Ajouter pour vérification** (visible en haut à droite de la fiche, déjà repéré plus tôt dans le parcours) puis confirmer la soumission
+- Choix du mode de publication : automatique dès l'approbation, ou manuelle (l'app reste approuvée mais non publiée tant qu'on ne clique pas sur "Publier") — la manuelle laisse le contrôle du moment exact de sortie
+
+### 9.8 Après soumission
+- Délai habituel de revue : **quelques jours** (variable selon la période et la charge d'Apple)
+- Un ou deux rejets sur des détails de fiche (métadonnées, wording des captures, catégorie mal choisie) sont fréquents et normaux à la première soumission — pas un signal d'alarme, juste corriger le point signalé dans **Resolution Center** et resoumettre
+- Si rejet lié à l'absence de clavier MIDI détectable : vérifier que la note du §9.3 est bien assez explicite, éventuellement ajouter une courte vidéo de démo dans les notes si le rejet persiste
 
 ---
 
@@ -168,6 +238,13 @@ Délai habituel avant que le build apparaisse dans TestFlight sur App Store Conn
 - [ ] Orientation verrouillée + Requires full screen si applicable
 - [ ] Icône 1024×1024 sans alpha
 - [ ] Archive → **Validate App** (vérifier le certificat **Apple Distribution** existe dans Manage Certificates si erreur de signature) → Distribute App → App Store Connect → Upload
+- [ ] Conformité chiffrement (popup ou clé `ITSAppUsesNonExemptEncryption`)
+- [ ] Groupe de testeurs internes créé + soi-même ajouté → build installé via TestFlight sur son iPhone
 - [ ] Test réel via TestFlight + App Review Notes si point d'usage à signaler
-- [ ] Captures, description, catégorie
-- [ ] Soumission
+- [ ] Captures d'écran (3 premières = les plus importantes), description, mots-clés, catégorie
+- [ ] URL de support renseignée
+- [ ] App Review Information : contact + notes explicatives si besoin
+- [ ] Build sélectionné dans la fiche de version
+- [ ] Confidentialité de l'app revérifiée
+- [ ] Prix et disponibilité renseignés
+- [ ] Ajouter pour vérification → choix publication auto/manuelle → soumission

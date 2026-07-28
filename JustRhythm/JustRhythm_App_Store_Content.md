@@ -1,24 +1,35 @@
-# JustRhythm – App Store Content
+# JustRhythm – App Store Content (version corrigée)
 
-## Slogan
-
-The missing feedback from every metronome.
+⚠️ **Avant de coller quoi que ce soit** : confirmer si Bluetooth MIDI (via `CABTMIDICentralViewController`) et Network MIDI (Bonjour) sont réellement implémentés. Tout ce qui a été testé jusqu'ici est de l'USB. Les lignes concernées sont marquées ci-dessous.
 
 ---
 
-## App Store Subtitle (30 characters max)
+## Subtitle (champ réel, 30 caractères max)
 
-Visualize your rhythmic placement
+```
+Real-time rhythm feedback
+```
+25/30 caractères. Fait écho au slogan (cohérence de ton entre les deux champs).
+
+Alternatives si tu préfères garder "Visualize" :
+- `See your rhythmic timing` (24 car.)
+- `Visualize your rhythm` (21 car.)
 
 ---
 
-## Short Description
+## Promotional Text (champ réel, 170 caractères max — modifiable à tout moment sans nouvelle version)
 
-JustRhythm transforms your metronome into a real rhythm coach. Connect your MIDI instrument and the app analyzes your synchronization in real-time, immediately showing you whether you're rushing, dragging, or perfectly locked in.
+```
+Turn your metronome into a rhythm coach. Connect a MIDI instrument and see instantly if you're rushing, dragging, or perfectly on time.
+```
+135/170 caractères — marge pour ajuster plus tard (annonce saisonnière, mise à jour, etc.) sans repasser par la revue Apple.
 
 ---
 
-## Full App Store Description
+## Description (champ réel, 4000 caractères max)
+
+```
+Requires a MIDI-compatible instrument (keyboard, drum pad, or similar) connected via USB.
 
 Improve your rhythmic placement like never before.
 
@@ -35,113 +46,68 @@ An exclusive feature strengthens audio feedback too: when your playing is perfec
 
 After a few weeks of training, your playing naturally becomes more precise, more stable, and more in the groove. You'll play more easily with a drummer or other musicians, and your music will gain cohesion, energy, and impact.
 
----
-
-## Key Features
-
+Key features:
 - Customizable metronome
 - Real-time rhythmic placement analysis
-- Display of rush or drag timing
 - Millisecond deviation measurement
 - Visual precision indicator
 - Play consistency analysis
 - Audio feedback when perfectly locked in
 - Training tool for all instruments
 
----
+Supported MIDI input: USB MIDI devices (including USB-MIDI interfaces)
+```
 
-## MIDI Connection Requirements
-
-**Important:** JustRhythm requires a MIDI connection to function.
-
-You'll need:
-- A MIDI-compatible instrument (keyboard, drum pad, guitar interface, etc.)
-- A MIDI cable or wireless MIDI connection (Bluetooth MIDI supported)
-- Compatible iOS device (iPhone, iPad)
-
-**Supported MIDI Inputs:**
-- USB MIDI devices
-- Bluetooth MIDI devices
-- Network MIDI (Bonjour)
-- Audio Interface with MIDI
+**Note** : la ligne d'exigence MIDI est désormais la toute première phrase, conformément à ta propre remarque dans "Additional Notes". Les lignes Bluetooth/Network MIDI ont été retirées jusqu'à confirmation qu'elles fonctionnent réellement — à réintégrer dans une future mise à jour de la Description une fois testées.
 
 ---
 
-## App Store Keywords
+## Keywords (champ réel, 100 caractères max, séparés par virgules sans espace)
 
-metronome, rhythm, groove, timing, music, MIDI, drums, guitar, piano, tempo, musician, training, precision, synchronization
-
----
-
-## Marketing Copy
-
-It's not a metronome. It's a visual rhythm coach that helps you play more precisely, more consistently, and more in the groove.
+```
+metronome,groove,timing,music,MIDI,drums,guitar,piano,tempo,training,precision,synchronization
+```
+93/100 caractères. "rhythm" et "musician" retirés : "rhythm" est déjà indexé via le nom de l'app et le subtitle, "musician" apportait peu de valeur de recherche différenciante.
 
 ---
 
-## User Promise
+## App Review Notes (jamais public, visible seulement par l'examinateur)
 
-See your rhythmic placement in real-time to naturally correct your playing and develop a stronger groove.
-
----
-
-## Positioning
-
-The first visual rhythm coach for musicians who want to truly play in time.
+```
+This app requires a MIDI keyboard connected via USB to function — it analyzes the timing of notes played against a metronome click. Without a keyboard connected, the app displays a clean "No keyboard detected" state (see Settings screen) rather than any error. This is expected behavior, not a bug. If a physical MIDI keyboard is not available for testing, connecting via a USB-MIDI interface or any Class-Compliant MIDI keyboard is sufficient.
+```
 
 ---
 
-## Screenshots (Text Ideas)
+## Captures d'écran — recommandations
 
-1. Play with your metronome
-2. Visualize your precision in real-time
-3. See your rush or drag timing
-4. Correct your placement instantly
-5. Develop a stronger groove
-6. Play more in sync with other musicians
+- **Utiliser les captures de vraie séance** (notes affichées en temps réel, +11 ms / -3 ms visibles) plutôt qu'un écran vide — une capture publique doit montrer la valeur de l'app, pas l'absence de clavier
+- **Ne pas inclure l'état "No keyboard"** dans les captures publiques — utile uniquement en App Review Notes ou en QA interne
+- Si l'écran Settings est utilisé en capture, **flouter le nom d'appareil détecté** (ex. "CVP-303 Port 1") pour éviter toute implication de partenariat de marque non sollicité
 
 ---
 
-## Pre-Launch Checklist
+## Pre-Launch Checklist (mise à jour)
 
-- [ ] Verify exact availability of JustRhythm name on App Store
-- [ ] Verify trademark availability in target countries
-- [ ] Reserve domain name if necessary
-- [ ] Prepare iPhone and iPad screenshots
-- [ ] Test description with musicians of different skill levels
-- [ ] Check compliance with App Store guidelines
-- [ ] Prepare app icon and preview images
-
----
-
-## Recommended Launch Version
-
-| Element | Content |
-|---------|---------|
-| **Name** | JustRhythm |
-| **Subtitle** | Visualize your rhythmic placement |
-| **Slogan** | The missing feedback from every metronome. |
-
-This trio offers the best balance between clarity, professionalism, and differentiation on the App Store.
+- [x] ~~Verify exact availability of JustRhythm name on App Store~~ — déjà fait, la fiche existe sous ce nom
+- [x] ~~Reserve domain name if necessary~~ — non applicable, convention Bundle ID `dev.oundjian.*` ne nécessite pas de domaine possédé
+- [ ] Confirmer le support réel de Bluetooth MIDI et Network MIDI avant de les mentionner publiquement
+- [ ] Préparer captures iPhone et iPad à partir d'une vraie séance de jeu
+- [ ] Flouter tout nom de marque d'appareil visible dans les captures Settings
+- [ ] Vérifier la conformité aux App Store Guidelines (fait dans le cadre du parcours de publication)
+- [ ] Icône et images de preview déjà prêtes (voir guide de publication)
 
 ---
 
-## Additional Notes
+## Éléments hors champs App Store Connect (repères de ton, pas de texte à coller)
 
-- **Target Audience**: Musicians of all levels (beginners to professionals)
-- **Instruments**: Universal for all instruments
-- **Difficulty Level**: Beginner-friendly interface with advanced features for pros
-- **Language Support**: Consider translations for major markets (French, Spanish, German, etc.)
+Ces éléments n'ont pas de champ dédié dans App Store Connect — ils servent de boussole de ton pour rédiger cohérence entre Description, réponses aux avis, site web, etc.
 
-### ⚠️ Critical: MIDI Visibility on App Store
+**Slogan** : The missing feedback from every metronome.
 
-**Be explicit about MIDI requirements** to avoid negative reviews:
-- Clearly state "Requires MIDI connection" in the first line of the description
-- Add MIDI setup instructions or screenshots showing the connection process
-- Consider creating an onboarding flow that guides users through MIDI setup
-- Add a first screenshot or preview showing the MIDI connection screen
-- Mention supported MIDI device types in the description
-- Include troubleshooting tips for common MIDI connection issues
+**Marketing Copy** : It's not a metronome. It's a visual rhythm coach that helps you play more precisely, more consistently, and more in the groove.
 
-**Why this matters:**
-Users downloading without a MIDI device will leave negative reviews. Transparency prevents poor ratings and refund requests.
+**User Promise** : See your rhythmic placement in real-time to naturally correct your playing and develop a stronger groove.
+
+**Positioning** : A visual rhythm coach for musicians who want to truly play in time.
+*(Le "The first" du brouillon original a été retiré — une affirmation de préséance ("le premier") est invérifiable et inutilement risquée pour un bénéfice marginal.)*

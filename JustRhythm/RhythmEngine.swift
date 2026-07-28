@@ -67,9 +67,12 @@ final class RhythmEngine {
         midi.onNote = { [weak self] time, note, velocity, channel in
             self?.handle(time: time, note: note, velocity: velocity, channel: channel)
         }
-        midi.onSourceLost = { [weak self] name in
-            guard let self, self.running else { return }
-            self.message = String(format: NSLocalizedString("“%@” disconnected.", comment: ""), name)
+        midi.onSourceLost = { [weak self] _ in
+            guard let self else { return }
+            self.stop()
+            self.resetStats()
+            self.beats.removeAll()
+            self.message = nil
         }
         midi.onTransport = { [weak self] time, message in
             DispatchQueue.main.async { self?.handleTransport(time: time, message: message) }
