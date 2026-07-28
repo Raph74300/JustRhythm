@@ -110,6 +110,7 @@ struct MainView: View {
                     .buttonStyle(.borderedProminent)
                     .buttonBorderShape(.circle)
                     .tint(engine.running ? .secondary : .accentColor)
+                    .disabled(engine.settings.syncStart && !engine.running)
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 8)
@@ -209,6 +210,8 @@ struct MainView: View {
                         .font(.caption2)
                         .foregroundStyle(engine.externallyTriggered ? Palette.onTime : .secondary)
                         .labelStyle(.titleAndIcon)
+                        .fixedSize()
+                        .layoutPriority(1)
                 }
 
                 Text(engine.settings.subdivision.label)
@@ -217,6 +220,8 @@ struct MainView: View {
                     .padding(.horizontal, 7).padding(.vertical, 2)
                     .background(Color(uiColor: .tertiarySystemFill),
                                 in: Capsule())
+                    .fixedSize()
+                    .layoutPriority(1)
 
                 Spacer()
 
@@ -224,6 +229,8 @@ struct MainView: View {
                     Text(note)
                         .font(.footnote.monospaced())
                         .foregroundStyle(.secondary)
+                        .fixedSize()
+                        .layoutPriority(1)
                 }
             }
 
@@ -268,6 +275,7 @@ struct MainView: View {
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
                 .tint(engine.running ? .secondary : .accentColor)
+                .disabled(engine.settings.syncStart && !engine.running)
             }
 
             Slider(value: Binding(get: { engine.settings.bpm },

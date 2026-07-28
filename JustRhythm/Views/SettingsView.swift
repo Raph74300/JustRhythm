@@ -13,6 +13,13 @@ struct SettingsView: View {
 
     private var s: Settings { engine.settings }
 
+    private var channelSummary: String {
+        let channels = s.midiChannels.sorted()
+        if channels.isEmpty { return String(localized: "All") }
+        if channels.count <= 4 { return channels.map(String.init).joined(separator: ", ") }
+        return String(format: NSLocalizedString("%d channels", comment: ""), channels.count)
+    }
+
     var body: some View {
         NavigationStack {
             Form {
@@ -58,12 +65,10 @@ struct SettingsView: View {
                     .monospacedDigit()
             }
 
-            Picker("Listened channel", selection: Binding(
-                get: { s.midiChannel }, set: { s.midiChannel = $0 })) {
-                Text("All").tag(0)
-                ForEach(1...16, id: \.self) { n in
-                    Text(String(format: NSLocalizedString("Channel %d", comment: ""), n)).tag(n)
-                }
+            NavigationLink {
+                ChannelSelectionView(settings: s)
+            } label: {
+                LabeledContent("Listened channels", value: channelSummary)
             }
 
             Stepper(value: Binding(get: { s.minVelocity },

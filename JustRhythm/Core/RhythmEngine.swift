@@ -46,6 +46,12 @@ final class RhythmEngine {
     private(set) var clockBpm: Double?
 
     // — Grille —
+    // anchor/period/stepIndex/nextStep sont écrits depuis `queue` (schedule,
+    // followClock) et lus depuis la queue principale (nearestStep, appelée
+    // par handle() à chaque note) : sans ce verrou, les deux se recouvrent et
+    // nearestStep peut lire un anchor déjà à jour avec un period encore
+    // ancien, ce qui produit un écart incohérent, différent à chaque fois.
+    private let gridLock = NSLock()
     private var anchor: Double = 0
     private var period: Double = 0.75
     private var stepIndex = 0
@@ -119,20 +125,21 @@ final class RhythmEngine {
 
         hits.removeAll(); beats.removeAll(); deltas.removeAll()
         lastDelta = nil; stats = Stats(); openGroup = nil
-        stepIndex = 0
 
-        period = settings.stepPeriod
-        anchor = externalStart ?? (HostClock.now + 0.25)
         externallyTriggered = externalStart != nil
-        stepIndex = 0
-        nextStep = anchor
+        gridLock.withLock {
+            period = settings.stepPeriod
+            anchor = externalStart ?? (HostClock.now + 0.25)
+            stepIndex = 0
+            nextStep = anchor
 
-        // Un départ externe est déjà passé de quelques millisecondes quand on
-        // le traite : on avance jusqu'au premier pas encore programmable,
-        // sinon le premier clic partirait dans le passé et serait perdu.
-        while nextStep < HostClock.now + 0.02 {
-            stepIndex += 1
-            nextStep = anchor + Double(stepIndex) * period
+            // Un départ externe est déjà passé de quelques millisecondes quand on
+            // le traite : on avance jusqu'au premier pas encore programmable,
+            // sinon le premier clic partirait dans le passé et serait perdu.
+            while nextStep < HostClock.now + 0.02 {
+                stepIndex += 1
+                nextStep = anchor + Double(stepIndex) * period
+            }
         }
 
         running = true
@@ -160,11 +167,13 @@ final class RhythmEngine {
         guard running else { return }
         queue.async { [weak self] in
             guard let self else { return }
-            let t = max(HostClock.now + 0.10, self.nextStep)
-            self.period = self.settings.stepPeriod
-            self.anchor = t
-            self.stepIndex = 0
-            self.nextStep = t
+            self.gridLock.withLock {
+                let t = max(HostClock.now + 0.10, self.nextStep)
+                self.period = self.settings.stepPeriod
+                self.anchor = t
+                self.stepIndex = 0
+                self.nextStep = t
+            }
         }
     }
 
@@ -188,23 +197,25 @@ final class RhythmEngine {
         let horizon = HostClock.now + 0.20
         var scheduled: [Beat] = []
 
-        while nextStep < horizon {
-            let subdiv = settings.subdivision.rawValue
-            let perBar = settings.stepsPerBar
-            let isMain = stepIndex % subdiv == 0
-            let isAccent = perBar > 0 && stepIndex % perBar == 0
+        gridLock.withLock {
+            while nextStep < horizon {
+                let subdiv = settings.subdivision.rawValue
+                let perBar = settings.stepsPerBar
+                let isMain = stepIndex % subdiv == 0
+                let isAccent = perBar > 0 && stepIndex % perBar == 0
 
-            // Le clic ne sonne que sur les temps : cliquer les subdivisions
-            // est en phase 3 (EX-044). La grille, elle, est déjà fine.
-            if settings.clickEnabled && isMain {
-                metronome.schedule(at: nextStep,
-                                   voice: settings.clickVoice,
-                                   accent: isAccent,
-                                   volume: Float(settings.volume))
+                // Le clic ne sonne que sur les temps : cliquer les subdivisions
+                // est en phase 3 (EX-044). La grille, elle, est déjà fine.
+                if settings.clickEnabled && isMain {
+                    metronome.schedule(at: nextStep,
+                                       voice: settings.clickVoice,
+                                       accent: isAccent,
+                                       volume: Float(settings.volume))
+                }
+                scheduled.append(Beat(time: nextStep, isMain: isMain, isAccent: isAccent))
+                stepIndex += 1
+                nextStep = anchor + Double(stepIndex) * period
             }
-            scheduled.append(Beat(time: nextStep, isMain: isMain, isAccent: isAccent))
-            stepIndex += 1
-            nextStep = anchor + Double(stepIndex) * period
         }
 
         guard !scheduled.isEmpty else { return }
@@ -265,27 +276,45 @@ final class RhythmEngine {
 
         queue.async { [weak self] in
             guard let self, self.running else { return }
-            self.period = newPeriod
+            self.gridLock.withLock {
+                self.period = newPeriod
 
-            // Correction de phase : écart entre la noire reçue et le point de
-            // grille le plus proche, appliqué à l'ancrage et borné à 20 ms.
-            let expected = self.anchor + ((time - self.anchor) / newPeriod).rounded() * newPeriod
-            let error = max(-0.020, min(0.020, time - expected))
-            self.anchor += error
-            self.nextStep = self.anchor + Double(self.stepIndex) * newPeriod
+                // Correction de phase : écart entre la noire reçue et le point de
+                // grille le plus proche, borné à 20 ms.
+                let expected = self.anchor + ((time - self.anchor) / newPeriod).rounded() * newPeriod
+                let error = max(-0.020, min(0.020, time - expected))
+
+                // Réancrage local, stepIndex remis à 0, plutôt que recalculer
+                // nextStep = anchor + stepIndex * newPeriod : cette formule
+                // multiplie le moindre bruit de mesure par stepIndex, qui ne
+                // fait que grandir tout au long de la séance — quelques
+                // dixièmes de ms de bruit deviennent un saut énorme après
+                // quelques dizaines de secondes. En repartant d'ici à chaque
+                // correction, l'erreur ne peut plus être amplifiée par la
+                // durée de la séance, seulement par l'écart borné ci-dessus.
+                self.anchor = expected + error
+                self.stepIndex = 0
+                self.nextStep = self.anchor
+                while self.nextStep < HostClock.now + 0.02 {
+                    self.stepIndex += 1
+                    self.nextStep = self.anchor + Double(self.stepIndex) * newPeriod
+                }
+            }
         }
     }
 
     /// Point de grille le plus proche. L'écart ne peut donc jamais dépasser
     /// une demi-période. (EX-032)
     private func nearestStep(_ t: Double) -> Double {
-        guard period > 0 else { return t }
-        return anchor + ((t - anchor) / period).rounded() * period
+        gridLock.withLock {
+            guard period > 0 else { return t }
+            return anchor + ((t - anchor) / period).rounded() * period
+        }
     }
 
     private func handle(time: Double, note: UInt8, velocity: UInt8, channel: UInt8) {
         guard Int(velocity) >= settings.minVelocity else { return }                  // (EX-018)
-        guard settings.midiChannel == 0 || Int(channel) + 1 == settings.midiChannel  // (EX-017)
+        guard settings.midiChannels.isEmpty || settings.midiChannels.contains(Int(channel) + 1)  // (EX-017)
         else { return }
 
         DispatchQueue.main.async { [weak self] in

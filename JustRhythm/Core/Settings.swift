@@ -64,8 +64,8 @@ final class Settings {
     var manualAlignmentMs: Double { didSet { store.set(manualAlignmentMs, forKey: K.align) } }
     var toleranceMs: Double { didSet { store.set(toleranceMs, forKey: K.tol) } }
     var lastSourceID: Int32 { didSet { store.set(Int(lastSourceID), forKey: K.source) } }
-    /// 0 = tous les canaux, sinon 1 à 16. (EX-017)
-    var midiChannel: Int { didSet { store.set(midiChannel, forKey: K.channel) } }
+    /// Vide = tous les canaux, sinon les canaux 1 à 16 retenus. (EX-017)
+    var midiChannels: Set<Int> { didSet { store.set(Array(midiChannels), forKey: K.channels) } }
     /// (EX-018)
     var minVelocity: Int { didSet { store.set(minVelocity, forKey: K.minVel) } }
     /// Fenêtre de regroupement d'accord, en ms. 0 = chaque note comptée seule. (EX-036)
@@ -90,6 +90,9 @@ final class Settings {
     private static func bool(_ key: String, _ fallback: Bool) -> Bool {
         UserDefaults.standard.object(forKey: key) as? Bool ?? fallback
     }
+    private static func intSet(_ key: String, _ fallback: Set<Int>) -> Set<Int> {
+        (UserDefaults.standard.object(forKey: key) as? [Int]).map(Set.init) ?? fallback
+    }
 
     init() {
         bpm          = Self.double(K.bpm, 80)
@@ -105,7 +108,7 @@ final class Settings {
         manualAlignmentMs = Self.double(K.align, 0)
         toleranceMs       = Self.double(K.tol, 20)
         lastSourceID      = Int32(Self.int(K.source, 0))
-        midiChannel       = Self.int(K.channel, 0)
+        midiChannels      = Self.intSet(K.channels, [])
         minVelocity       = Self.int(K.minVel, 1)
         chordWindowMs     = Self.double(K.chord, 30)
         windowMs          = Self.double(K.window, 120)
@@ -124,7 +127,7 @@ final class Settings {
         static let syncStart = "syncStart"
         static let feedbackOn = "feedbackOn", feedbackMode = "feedbackMode"
         static let align = "align", tol = "tol", source = "source"
-        static let channel = "channel", minVel = "minVel", chord = "chord"
+        static let channels = "channels", minVel = "minVel", chord = "chord"
         static let window = "window", statsWin = "statsWin"
     }
 }
