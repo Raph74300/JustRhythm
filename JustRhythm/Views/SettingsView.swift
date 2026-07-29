@@ -200,21 +200,32 @@ struct SettingsView: View {
         Section {
             VStack(alignment: .leading, spacing: 6) {
                 LabeledContent("“Right” zone") {
-                    Text("± \(Int(s.toleranceMs)) ms").monospacedDigit()
+                    // Sur une grille fine, le plancher l'emporte sur le
+                    // pourcentage : sans ce repère, le curseur semblerait
+                    // sans effet.
+                    Text(String(format: NSLocalizedString(
+                        engine.tolerance == Tolerance.floor ? "%d %% · ± %d ms (min)" : "%d %% · ± %d ms",
+                        comment: ""),
+                                Int(s.tolerancePercent),
+                                Int((engine.tolerance * 1000).rounded())))
+                        .monospacedDigit()
                 }
-                Slider(value: Binding(get: { s.toleranceMs },
-                                      set: { s.toleranceMs = $0.rounded() }),
-                       in: 5...60, step: 1)
+                Slider(value: Binding(get: { s.tolerancePercent },
+                                      set: { s.tolerancePercent = $0.rounded() }),
+                       in: 1...15, step: 1)
             }
 
             // (EX-067)
             VStack(alignment: .leading, spacing: 6) {
                 LabeledContent("Displayed scale") {
-                    Text("± \(Int(s.windowMs)) ms").monospacedDigit()
+                    Text(String(format: NSLocalizedString("%d %% · ± %d ms", comment: ""),
+                                Int((s.scaleZoom * 100).rounded()),
+                                Int((engine.gridPeriod / 2 * s.scaleZoom * 1000).rounded())))
+                        .monospacedDigit()
                 }
-                Slider(value: Binding(get: { s.windowMs },
-                                      set: { s.windowMs = ($0 / 10).rounded() * 10 }),
-                       in: 40...300, step: 10)
+                Slider(value: Binding(get: { s.scaleZoom },
+                                      set: { s.scaleZoom = ($0 * 20).rounded() / 20 }),
+                       in: 0.25...1, step: 0.05)
             }
 
             // (EX-084)
@@ -229,7 +240,7 @@ struct SettingsView: View {
         } header: {
             Text("Measurement")
         } footer: {
-            Text("The “right” zone sets the width of the green band and the basis for the percentage. The scale narrows or widens the graph without changing the measurement. The statistics window limits the summary to the most recent notes, so a hesitant start to a session doesn't weigh it down indefinitely.")
+            Text("Both are expressed relative to the reference grid, because the same error in milliseconds doesn't mean the same thing on a slow quarter note as on a fast sixteenth.\n\nThe “right” zone sets the width of the green band and the basis for the percentage. It tightens on its own as the grid gets finer, but never goes below 20 ms — under that an error stops being audible, so demanding better would be arbitrary.\n\nThe scale is capped at half a subdivision: past that point a note belongs to the next grid step, so there is nothing to show there. Lower it to zoom in; the measurement itself doesn't change. Since both follow the tempo, changing it mid-session also shifts the percentage already accumulated.\n\nThe statistics window limits the summary to the most recent notes, so a hesitant start to a session doesn't weigh it down indefinitely.")
         }
     }
 

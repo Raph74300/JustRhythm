@@ -26,9 +26,20 @@ No microphone permission is ever requested. JustRhythm only listens to MIDI.
 
 ## 3. The main screen
 
-**Readout (top).** The big number is the timing error of your last note, in milliseconds, signed: a leading `+` means you played late, `−` means early. Underneath, a word tells you the same thing in plain language: *on time*, *early*, *late*. If you just played a chord, a small line below shows how many notes were in it and how spread out they were.
+**Readout (top).** Three indicators, read like a guitar tuner: a triangle on each side and a bar in the middle. This is the thing to watch while you play.
 
-**Graph.** A vertical line down the center represents the beat. Time scrolls from top to bottom — the newest events are at the bottom, near the line. Each note you play appears as a short bar: on the line if you were exactly on time, to the left if early, to the right if late. A green band around the center marks your "right" zone — notes landing inside it count as accurate. Metronome beats scroll down too, as faint horizontal lines, so you can see how your notes line up with the pulse over time. **Tap the graph** to switch to full-screen mode — same graph, larger, with just the essentials (current error, tempo, note count) and nothing else on screen.
+- **Center bar green** — your playing fits inside the "right" zone. Nothing else is lit
+- **Left triangle** — you're running **early**
+- **Right triangle** — you're running **late**
+- **Both triangles** — your placement is **uneven**: centered on average, but scattered around the beat
+
+Like a tuner, the center only lights when you're actually on target — it's the state you're aiming for, not a permanent marker. The indicators stay faintly visible when off, so the target is identifiable before you've played a note.
+
+That fourth state is why the reading tracks a *range* rather than a single average. An average alone would hide it: a note 40 ms early and one 40 ms late cancel out, and the app would call sloppy playing perfect. What the indicators react to is the range your recent notes are landing in — its center *and* its width. And it follows your **last 16 notes**, not the last single one: one note's error jumps around too much from keystroke to keystroke to steer by — you'd be chasing noise.
+
+Underneath, a word says the same thing in plain language — *on time*, *early*, *late*, *uneven* — and below that, the range as numbers: the average (`+` late, `−` early) followed by `±` and how spread out you are, in milliseconds. Three indicators can't show *how far* off you are, so that line is where to look for it, along with the stats row. If you just played a chord, a last line shows how many notes were in it and how spread out they were.
+
+**Graph.** A vertical line down the center represents the beat. Time scrolls from top to bottom — the newest events are at the bottom, near the line. Each note you play appears as a short bar: on the line if you were exactly on time, to the left if early, to the right if late. A green band around the center marks your "right" zone — notes landing inside it count as accurate. The two edges of the graph are meaningful too: they sit exactly half a subdivision away from the beat, which is the point where a note stops being "late on this step" and becomes "early on the next one." Metronome beats scroll down too, as faint horizontal lines, so you can see how your notes line up with the pulse over time. **Tap the graph** to switch to full-screen mode — same graph, larger, with just the essentials (the rolling average, tempo, note count) and nothing else on screen.
 
 **Stats row**, below the graph:
 - **Notes** — how many have been measured this session
@@ -58,6 +69,8 @@ Choose the subdivision your notes are judged against (quarter notes, eighth note
 ### Synchronization
 **Synced start** — when your keyboard has a built-in drum machine or sequencer, turning this on makes JustRhythm start on its Start message instead of a fixed delay, and keep following its MIDI clock afterward so the two never drift apart. With it off, you start and stop manually as usual.
 
+While the clock is driving, the tempo shown reads **bpm received** and the app adopts it as its own: the "right" zone and the graph scale follow it, and the app's tempo controls are greyed out — setting them by hand would be pointless, since the next beat would overwrite your value. The received tempo is kept when you stop, so the next manual session starts from the tempo you were actually playing at rather than from a stale setting.
+
 ### Reward
 An optional sound plays back on your instrument when a note lands in the "right" zone — a small, immediate confirmation you're on time. Two modes:
 - **Note doubled an octave up** — an extra note, an octave above what you played, sounds alongside it. Keep **Local Control on** on your instrument so your own notes keep sounding normally; this one is just a bonus layered on top.
@@ -72,9 +85,13 @@ Notes played within a short window (default 30 ms) count as one event, timestamp
 Two numbers combine to place the click exactly on the beat as *heard*, not just as scheduled: an automatic compensation (measured from your current audio output's delay) and a manual correction you can nudge by ear, from −60 to +60 ms. **Don't tune the manual correction by feel** — everyone naturally anticipates the beat by 10–20 ms, and doing so just bakes that bias into the app's zero point. The reliable method: turn on Synced start, start your keyboard's drum machine, and adjust the manual correction until its click and JustRhythm's click merge into one sound. A **Test the sound** button plays an isolated click to check the audio chain without starting a session.
 
 ### Measurement
-- **"Right" zone** — how wide the accurate band is, in ± ms; sets both the green band on the graph and the "In the zone" percentage
-- **Displayed scale** — how wide the graph reads left-to-right; purely visual, doesn't change what's measured
+The first two settings are expressed **relative to the reference grid**, not in fixed milliseconds — because the same error doesn't mean the same thing on a slow quarter note as on a fast sixteenth. Both show you the resulting value in ms for your current tempo, so you keep the concrete figure in view.
+
+- **"Right" zone** — how wide the accurate band is, as a percentage of the subdivision; sets both the green band on the graph and the "In the zone" percentage. It tightens on its own as the grid gets finer. It never goes below **20 ms**, though: under that an error stops being audible, so demanding better would be arbitrary. When that floor is what's actually in effect, the value reads `(min)` — on fine grids that's normal, and moving the percentage slider won't change anything until you go well above it.
+- **Displayed scale** — how wide the graph reads left-to-right, as a percentage of half a subdivision. At 100 % the graph covers exactly the range an error can reach: past half a subdivision, a note belongs to the *next* grid step instead, so there's nothing to show out there. Lower it to zoom in. Purely visual — it never changes what's measured.
 - **Statistics window** — how many of the most recent notes feed the stats, so a shaky start to a session doesn't drag down the whole average forever
+
+Because the first two follow the tempo, changing tempo or subdivision mid-session also shifts the "In the zone" percentage you've already accumulated.
 
 ### Data
 **Clear statistics** resets the counters and the graph without stopping the metronome — useful to start a fresh read mid-session.
@@ -102,3 +119,5 @@ They measure two different things, and mixing them up leads to the wrong fix:
 - **Regularity** tells you how *scattered* your notes are around wherever your average sits, even if that average is exactly zero. That's inconsistency, and it's a different problem — more repetition and more control, not a timing adjustment.
 
 A high "In the zone" percentage with a non-zero average means you're being penalized for a bias that dodges around inside a wide enough tolerance zone — worth checking the Average figure specifically, not just the percentage.
+
+Both thresholds — the "right" zone and the regularity limit — scale with the grid rather than sitting at a fixed number of milliseconds, and both stop scaling at a floor (20 ms and 15 ms respectively). The reasoning is the same in each case: a percentage alone would eventually demand more precision than a hand can deliver or an ear can hear, so the more forgiving of the two criteria wins. In practice this means a green light on fast sixteenths is genuinely harder to earn than on slow quarter notes — which is the point.

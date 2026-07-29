@@ -62,7 +62,11 @@ final class Settings {
 
     // — Configuration : ce qu'on règle une fois, donc derrière l'engrenage —
     var manualAlignmentMs: Double { didSet { store.set(manualAlignmentMs, forKey: K.align) } }
-    var toleranceMs: Double { didSet { store.set(toleranceMs, forKey: K.tol) } }
+    /// Largeur de la zone « juste », en pourcentage de la subdivision. Un
+    /// écart n'a pas la même portée musicale selon la finesse de la grille :
+    /// 50 ms sur une noire lente passent inaperçus, sur une double-croche
+    /// rapide ils s'entendent. (EX-063)
+    var tolerancePercent: Double { didSet { store.set(tolerancePercent, forKey: K.tolPct) } }
     var lastSourceID: Int32 { didSet { store.set(Int(lastSourceID), forKey: K.source) } }
     /// Vide = tous les canaux, sinon les canaux 1 à 16 retenus. (EX-017)
     var midiChannels: Set<Int> { didSet { store.set(Array(midiChannels), forKey: K.channels) } }
@@ -70,8 +74,10 @@ final class Settings {
     var minVelocity: Int { didSet { store.set(minVelocity, forKey: K.minVel) } }
     /// Fenêtre de regroupement d'accord, en ms. 0 = chaque note comptée seule. (EX-036)
     var chordWindowMs: Double { didSet { store.set(chordWindowMs, forKey: K.chord) } }
-    /// Échelle horizontale du graphe, en ms. (EX-067)
-    var windowMs: Double { didSet { store.set(windowMs, forKey: K.window) } }
+    /// Resserrement du graphe, de 0,25 à 1. À 1, il couvre exactement la
+    /// demi-subdivision — soit toute la plage qu'un écart peut atteindre,
+    /// ni plus (espace mort) ni moins (notes écrasées au bord). (EX-067)
+    var scaleZoom: Double { didSet { store.set(scaleZoom, forKey: K.scaleZoom) } }
     /// Nombre de notes retenues pour les statistiques. (EX-084)
     var statsWindow: Int { didSet { store.set(statsWindow, forKey: K.statsWin) } }
 
@@ -106,12 +112,12 @@ final class Settings {
         feedbackMode    = FeedbackMode(rawValue: Self.int(K.feedbackMode, 0)) ?? .octave
 
         manualAlignmentMs = Self.double(K.align, 0)
-        toleranceMs       = Self.double(K.tol, 20)
+        tolerancePercent  = Self.double(K.tolPct, 5)
         lastSourceID      = Int32(Self.int(K.source, 0))
         midiChannels      = Self.intSet(K.channels, [])
         minVelocity       = Self.int(K.minVel, 1)
         chordWindowMs     = Self.double(K.chord, 30)
-        windowMs          = Self.double(K.window, 120)
+        scaleZoom         = Self.double(K.scaleZoom, 1)
         statsWindow       = Self.int(K.statsWin, 200)
     }
 
@@ -126,9 +132,25 @@ final class Settings {
         static let subdiv = "subdiv", bar = "bar", voice = "voice"
         static let syncStart = "syncStart"
         static let feedbackOn = "feedbackOn", feedbackMode = "feedbackMode"
-        static let align = "align", tol = "tol", source = "source"
+        static let align = "align", tolPct = "tolPct", source = "source"
         static let channels = "channels", minVel = "minVel", chord = "chord"
-        static let window = "window", statsWin = "statsWin"
+        static let scaleZoom = "scaleZoom", statsWin = "statsWin"
+    }
+}
+
+/// Largeur de la zone « juste », rapportée à la subdivision. (EX-063)
+///
+/// Même raisonnement que `Regularity` ci-dessous, et pour la même raison : un
+/// pourcentage seul finirait par exiger mieux que ce qu'une main humaine peut
+/// faire, et mieux qu'une oreille ne sait entendre. On garde donc le plus
+/// permissif des deux critères.
+enum Tolerance {
+    /// Seuil courant de perception d'un décalage. En deçà, l'écart ne
+    /// s'entend plus : le mesurer garde un sens, l'exiger n'en a pas.
+    static let floor = 0.020
+
+    static func limit(percent: Double, step: Double) -> Double {
+        max(percent / 100 * step, floor)
     }
 }
 

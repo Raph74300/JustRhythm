@@ -11,6 +11,37 @@
         }
       }
     },
+    "%@%d ± %d ms": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@%d ± %d ms"
+          }
+        }
+      }
+    },
+    "%d %% · ± %d ms": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d %% · ± %d ms"
+          }
+        }
+      }
+    },
+    "%d %% · ± %d ms (min)": {
+      "extractionState": "stale",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d %% · ± %d ms (mini)"
+          }
+        }
+      }
+    },
     "%d bpm · %@": {
       "localizations": {
         "fr": {
@@ -167,6 +198,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Temps par mesure"
+          }
+        }
+      }
+    },
+    "Both are expressed relative to the reference grid, because the same error in milliseconds doesn't mean the same thing on a slow quarter note as on a fast sixteenth.\n\nThe “right” zone sets the width of the green band and the basis for the percentage. It tightens on its own as the grid gets finer, but never goes below 20 ms — under that an error stops being audible, so demanding better would be arbitrary.\n\nThe scale is capped at half a subdivision: past that point a note belongs to the next grid step, so there is nothing to show there. Lower it to zoom in; the measurement itself doesn't change. Since both follow the tempo, changing it mid-session also shifts the percentage already accumulated.\n\nThe statistics window limits the summary to the most recent notes, so a hesitant start to a session doesn't weigh it down indefinitely.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les deux s'expriment par rapport à la grille de référence, parce qu'un même écart en millisecondes n'a pas la même portée sur une noire lente et sur une double-croche rapide.\n\nLa zone « juste » donne la largeur de la bande verte et la base du pourcentage. Elle se resserre d'elle-même quand la grille s'affine, mais ne descend jamais sous 20 ms : en deçà, un écart cesse de s'entendre, l'exiger serait arbitraire.\n\nL'échelle est bornée à la demi-subdivision : au-delà, une note appartient au pas de grille suivant, il n'y a donc rien à y montrer. Baisse-la pour resserrer le graphe ; la mesure, elle, ne change pas. Comme les deux suivent le tempo, en changer au milieu d'une séance déplace aussi le pourcentage déjà accumulé.\n\nLa fenêtre statistique limite le bilan aux dernières notes, pour qu'un début de séance hésitant ne le plombe pas indéfiniment."
           }
         }
       }
@@ -799,16 +840,6 @@
         }
       }
     },
-    "The “right” zone sets the width of the green band and the basis for the percentage. The scale narrows or widens the graph without changing the measurement. The statistics window limits the summary to the most recent notes, so a hesitant start to a session doesn't weigh it down indefinitely.": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "La zone « juste » donne la largeur de la bande verte et la base du pourcentage. L'échelle resserre ou élargit le graphe sans changer la mesure. La fenêtre statistique limite le bilan aux dernières notes, pour qu'un début de séance hésitant ne le plombe pas indéfiniment."
-          }
-        }
-      }
-    },
     "This source is Bluetooth: it adds 10 to 20 ms with variable jitter. The average will be skewed; regularity, though, stays accurate. Prefer USB.": {
       "localizations": {
         "fr": {
@@ -893,16 +924,6 @@
         }
       }
     },
-    "milliseconds": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "millisecondes"
-          }
-        }
-      }
-    },
     "no note": {
       "localizations": {
         "fr": {
@@ -933,12 +954,32 @@
         }
       }
     },
+    "ready": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "prêt"
+          }
+        }
+      }
+    },
     "synced": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
             "value": "synchronisé"
+          }
+        }
+      }
+    },
+    "uneven": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "irrégulier"
           }
         }
       }
@@ -952,10 +993,6 @@
           }
         }
       }
-    },
-    "± %lld ms": {
-      "comment": "A label displaying the tolerance for what's considered a \"right\" note. The argument is the tolerance in milliseconds.",
-      "isCommentAutoGenerated": true
     },
     "“%@” disconnected.": {
       "extractionState": "stale",

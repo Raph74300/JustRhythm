@@ -17,6 +17,25 @@ struct Beat: Identifiable {
     let isAccent: Bool      // premier temps de la mesure (EX-042)
 }
 
+/// Où tombent réellement les dernières notes : un centre et une largeur.
+///
+/// Les deux ensemble, jamais le centre seul. Des écarts en avance et en
+/// retard s'annulent dans une moyenne : un jeu dispersé mais centré affiche
+/// la même moyenne qu'un jeu propre. Seule la dispersion les distingue.
+/// (EX-066 / EX-089)
+struct Placement: Equatable {
+    /// Centre de la fourchette, en secondes. Négatif en avance.
+    let mean: Double
+    /// Demi-largeur de la fourchette, en secondes.
+    let deviation: Double
+
+    /// Vrai quand toute la fourchette tient dans la zone juste — et pas
+    /// seulement son centre.
+    func isWithin(_ tolerance: Double) -> Bool {
+        abs(mean) + deviation <= tolerance
+    }
+}
+
 struct Stats {
     var count = 0
     var mean = 0.0          // secondes
@@ -98,7 +117,39 @@ final class RhythmEngine {
         }
     }
 
-    var tolerance: Double { settings.toleranceMs / 1000 }
+    /// Période réelle de la grille, en secondes.
+    ///
+    /// Tant que l'horloge du clavier est reçue, c'est elle qui fait foi —
+    /// `settings.bpm` la recopie (voir `adoptClockTempo`) mais arrondie, donc
+    /// on part de la valeur non arrondie. Tout ce qui s'exprime « par rapport
+    /// à la subdivision » passe par ici, pour que la zone juste et l'échelle
+    /// du graphe suivent la grille réellement en vigueur.
+    var gridPeriod: Double {
+        if let clockBpm { return 60.0 / clockBpm / Double(settings.subdivision.rawValue) }
+        return settings.stepPeriod
+    }
+
+    var tolerance: Double {
+        Tolerance.limit(percent: settings.tolerancePercent, step: gridPeriod)
+    }
+
+    /// Nombre de notes derrière la lecture instantanée. Assez pour que la
+    /// variabilité d'une frappe isolée se noie, assez peu pour qu'une
+    /// correction du jeu se voie en une ou deux mesures.
+    static let readoutWindow = 16
+
+    /// Fourchette glissante des derniers écarts.
+    ///
+    /// C'est elle qu'on lit en jouant, et non l'écart de la dernière note :
+    /// celui-ci saute d'une frappe à l'autre, au point qu'on ne peut rien en
+    /// tirer sans s'arrêter de jouer. (EX-066 / EX-089)
+    var recentPlacement: Placement? {
+        let recent = hits.suffix(Self.readoutWindow).map(\.delta)
+        guard !recent.isEmpty else { return nil }
+        let mean = recent.reduce(0, +) / Double(recent.count)
+        let variance = recent.reduce(0) { $0 + ($1 - mean) * ($1 - mean) } / Double(recent.count)
+        return Placement(mean: mean, deviation: variance.squareRoot())
+    }
 
     // =====================================================================
 
@@ -270,6 +321,7 @@ final class RhythmEngine {
         let smoothed = smoothedBeat.map { $0 * 0.8 + interval * 0.2 } ?? interval
         smoothedBeat = smoothed
         clockBpm = 60.0 / smoothed
+        adoptClockTempo()
 
         let subdiv = Double(settings.subdivision.rawValue)
         let newPeriod = smoothed / subdiv
@@ -301,6 +353,21 @@ final class RhythmEngine {
                 }
             }
         }
+    }
+
+    /// Le tempo reçu du clavier devient celui de l'application.
+    ///
+    /// Sans cela, la valeur ne vivrait que le temps de la séance : à l'arrêt,
+    /// l'horloge cesse d'être reçue et tout ce qui en dépend — zone juste,
+    /// échelle du graphe, tempo affiché — retomberait sur le réglage manuel
+    /// devenu obsolète. L'adopter le rend persistant (EX-093) et cohérent
+    /// d'une séance à l'autre.
+    ///
+    /// La zone morte évite de réécrire le réglage à chaque battement quand
+    /// l'estimation oscille autour d'une valeur entière.
+    private func adoptClockTempo() {
+        guard let clockBpm, abs(clockBpm - settings.bpm) > 0.75 else { return }
+        settings.bpm = min(max(clockBpm.rounded(), 30), 240)
     }
 
     /// Point de grille le plus proche. L'écart ne peut donc jamais dépasser

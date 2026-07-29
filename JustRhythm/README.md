@@ -10,12 +10,22 @@ collected — see `PrivacyInfo.xcprivacy`.
 
 ## What it does
 
+- Tuner-style readout over the last 16 notes — center bar for on-target, a
+  triangle each side for early/late (`Views/BiasMeter.swift`). Both sides read
+  the range the notes actually land in (mean ± dispersion), not just the
+  average, so both triangles light for scattered-but-centered playing that an
+  average alone would call perfect — early and late errors cancel out in a mean
 - Real-time scrolling graph: a centered plumb line is the beat, notes land
   left (early), right (late), or on the line
 - Live stats: note count, average bias, regularity, percentage in the "right"
   zone
 - Metronome with five synthesized click tones, adjustable grid subdivision
   and accent
+- **Grid-relative accuracy** — the "right" zone is a percentage of the
+  subdivision with a 20 ms floor, and the graph is capped at half a
+  subdivision (the point where a note flips to the next grid step). Both
+  follow the keyboard's clock when it's being tracked (`Core/Settings.swift`,
+  `Tolerance` / `Regularity`)
 - **Synced start** — starts on a connected drum machine's MIDI Start message
   and follows its clock, instead of a fixed delay (`Core/RhythmEngine.swift`)
 - **Sound reward** — optional MIDI echo back to the instrument when a note

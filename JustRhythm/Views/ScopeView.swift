@@ -39,7 +39,10 @@ struct ScopeView: View {
 
     private func draw(context: GraphicsContext, size: CGSize, now: Double) {
         let cx = size.width / 2
-        let window = engine.settings.windowMs / 1000
+        // Les bords du graphe valent la demi-subdivision : au-delà, la note
+        // appartiendrait au pas suivant. Le zoom resserre cette plage sans
+        // jamais l'élargir, puisqu'il n'y a rien à y voir. (EX-067)
+        let window = engine.gridPeriod / 2 * engine.settings.scaleZoom
         let scale = (size.width / 2 - 16) / window        // points par seconde d'écart
         let pxPerSecond = size.height / depth
 
@@ -49,15 +52,15 @@ struct ScopeView: View {
             Path(CGRect(x: cx - tolPx, y: 0, width: tolPx * 2, height: size.height)),
             with: .color(Palette.onTime.opacity(0.10)))
 
-        // Graduations tous les 50 ms.
-        var graduation = 0.050
-        while graduation <= window {
-            let dx = graduation * scale
+        // Graduations par fractions de la fenêtre, et non tous les 50 ms : en
+        // doubles-croches rapides la fenêtre entière fait moins de 60 ms, un
+        // pas fixe n'y tracerait qu'un seul trait.
+        for fraction in [0.25, 0.5, 0.75, 1.0] {
+            let dx = window * fraction * scale
             for x in [cx - dx, cx + dx] {
                 context.fill(Path(CGRect(x: x, y: 0, width: 0.5, height: size.height)),
                              with: .color(Palette.grid))
             }
-            graduation += 0.050
         }
 
         // Temps du métronome qui descendent. (EX-068)

@@ -62,7 +62,10 @@ struct MainView: View {
             transport
         }
         .padding(.horizontal, 16)
-        .padding(.top, 8)
+        // Les voyants remplissent leur cadre de bord à bord, sans l'interligne
+        // qui aérait le chiffre qu'ils remplacent : sans cette marge, ils
+        // viennent toucher la barre de navigation.
+        .padding(.top, 28)
         .safeAreaInset(edge: .bottom) { messageBar }
     }
 
@@ -133,17 +136,24 @@ struct MainView: View {
     // =====================================================================
 
     private var readout: some View {
-        VStack(spacing: 2) {
-            Text(displayValue)
-                .font(.system(size: 56, weight: .light, design: .rounded))
-                .monospacedDigit()
-                .foregroundStyle(currentTint)
-                .contentTransition(.numericText())
-                .animation(.easeOut(duration: 0.12), value: engine.lastDelta)
+        VStack(spacing: 6) {
+            BiasMeter(placement: engine.recentPlacement, tolerance: engine.tolerance)
 
             Text(verdict)
-                .font(.subheadline)
+                .font(.title3.weight(.medium))
+                .foregroundStyle(currentTint)
+                .contentTransition(.opacity)
+                .animation(.easeOut(duration: 0.25), value: verdict)
+
+            // La valeur chiffrée reste utile — pour régler l'alignement,
+            // notamment — mais elle n'a plus à être ce qu'on regarde en
+            // jouant : les barres le disent plus vite.
+            Text(displayValue)
+                .font(.caption)
+                .monospacedDigit()
                 .foregroundStyle(.secondary)
+                .contentTransition(.numericText())
+                .animation(.easeOut(duration: 0.25), value: engine.recentPlacement)
 
             // Pour un accord, l'étalement compte autant que le placement.
             // Ligne toujours présente pour que la hauteur ne saute pas. (EX-037)
@@ -162,33 +172,51 @@ struct MainView: View {
                       hit.notes.count, Int((hit.spread * 1000).rounded()))
     }
 
+    // Tout ce bloc lit la fourchette glissante, et non l'écart de la dernière
+    // note : celui-ci change à chaque frappe, au point d'être illisible en
+    // jouant. (EX-066)
+
     private var displayValue: String {
-        guard let delta = engine.lastDelta else { return "–" }
-        let ms = Int((delta * 1000).rounded())
-        return "\(ms > 0 ? "+" : (ms < 0 ? "−" : ""))\(abs(ms))"
+        guard let placement = engine.recentPlacement else { return "–" }
+        let mean = Int((placement.mean * 1000).rounded())
+        let deviation = Int((placement.deviation * 1000).rounded())
+        let sign = mean > 0 ? "+" : (mean < 0 ? "−" : "")
+        return String(format: NSLocalizedString("%@%d ± %d ms", comment: ""),
+                      sign, abs(mean), deviation)
     }
 
-    private var compactValue: String {
-        guard engine.lastDelta != nil else { return "–" }
-        return displayValue + " ms"
-    }
+    private var compactValue: String { displayValue }
 
     private var currentTint: Color {
-        guard let delta = engine.lastDelta else { return .secondary }
-        return Palette.tint(for: delta, tolerance: engine.tolerance)
+        guard let placement = engine.recentPlacement else { return .secondary }
+        return placement.isWithin(engine.tolerance) ? Palette.onTime : Palette.offTime
     }
 
     private var verdict: String {
-        guard let delta = engine.lastDelta else {
-            return engine.running ? String(localized: "play on the beat") : String(localized: "milliseconds")
+        guard let placement = engine.recentPlacement else {
+            // « milliseconds » servait d'unité sous le gros chiffre ; celui-ci
+            // est passé en dessous et porte désormais son unité.
+            return engine.running ? String(localized: "play on the beat") : String(localized: "ready")
         }
-        if abs(delta) <= engine.tolerance { return String(localized: "on time") }
-        return delta < 0 ? String(localized: "early") : String(localized: "late")
+        let tolerance = engine.tolerance
+        // L'ordre compte : la fourchette entière doit tenir dans la zone pour
+        // que le jeu soit dit juste, et un décalage franc prime sur
+        // l'irrégularité, parce qu'il se corrige autrement.
+        if placement.isWithin(tolerance) { return String(localized: "on time") }
+        if placement.mean < -tolerance { return String(localized: "early") }
+        if placement.mean > tolerance { return String(localized: "late") }
+        return String(localized: "uneven")
     }
 
     // =====================================================================
     // Transport : ce qu'on touche en jouant reste sur l'écran
     // =====================================================================
+
+    /// Vrai tant que l'horloge du clavier pilote le tempo : le régler à la
+    /// main n'aurait aucun effet, la valeur serait reprise au battement
+    /// suivant. Condition sur l'horloge reçue, et non sur le réglage de
+    /// synchro : un clavier qui envoie Start sans horloge laisse la main.
+    private var clockDriven: Bool { engine.clockBpm != nil }
 
     private var transport: some View {
         VStack(spacing: 14) {
@@ -243,6 +271,7 @@ struct MainView: View {
                 }
                 .buttonStyle(.bordered)
                 .buttonBorderShape(.circle)
+                .disabled(clockDriven)
 
                 VStack(spacing: 2) {
                     // Quand l'horloge du clavier est suivie, c'est elle qui
@@ -264,6 +293,7 @@ struct MainView: View {
                 }
                 .buttonStyle(.bordered)
                 .buttonBorderShape(.circle)
+                .disabled(clockDriven)
 
                 Spacer()
 
@@ -287,6 +317,7 @@ struct MainView: View {
             } maximumValueLabel: {
                 Text("240").font(.caption2).foregroundStyle(.secondary)
             }
+            .disabled(clockDriven)
 
             HStack(spacing: 12) {
                 Image(systemName: engine.settings.clickEnabled
@@ -329,7 +360,7 @@ struct StatsGrid: View {
     let engine: RhythmEngine
 
     private var hasData: Bool { engine.stats.count > 0 }
-    private var step: Double { engine.settings.stepPeriod }
+    private var step: Double { engine.gridPeriod }
 
     var body: some View {
         HStack(spacing: 0) {
