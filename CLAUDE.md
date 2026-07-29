@@ -54,3 +54,44 @@ tard, pourquoi un bout de code existe.
   ces changements sont légitimes, ne pas les écraser.
 - Toujours `xcodebuild -scheme JustRhythm -sdk iphonesimulator build` après
   une modification de code, avant de considérer une tâche terminée.
+
+## Matériel de référence
+
+Tout ce qui a été mesuré l'a été sur un **Yamaha CVP-303 en USB**. Ces
+valeurs sont celles de ce clavier, pas des constantes :
+
+- **Correction manuelle : −20 ms**, étalonnée en jouant un fichier MIDI
+  quantifié depuis le séquenceur du clavier (protocole décrit dans les
+  Réglages). Elle compense un décalage interne au CVP entre son horloge et
+  ses notes : les messages temps réel sont prioritaires dans sa file de
+  sortie, les notes passent derrière. Un autre clavier donnera autre chose.
+- **Gigue résiduelle du transport : 1 à 2 ms**, une fois synchronisé.
+- Un résidu **n'est pas** compensé : le balayage des touches, absent quand le
+  séquenceur joue mais présent quand l'instrumentiste joue. Quelques ms,
+  hors de portée sans instrumentation externe.
+
+## Pistes ouvertes
+
+Décisions prises mais pas encore appliquées, ou options écartées qui restent
+rouvrables — à ne pas reproposer comme des nouveautés :
+
+- **Numéro de build** : à incrémenter avant chaque archive TestFlight. Apple
+  refuse un couple version + build déjà envoyé.
+- **Tolérance réglée haut** (~12-15 %) sur l'appareil du développeur. À 5 %
+  le retour serait nettement plus discriminant ; recommandé, pas encore fait.
+- **« Network Session 1 » résiduelle** dans la liste des sources : vestige
+  système d'un Network MIDI abandonné, plus aucun code dans l'app. Se
+  désactive côté Mac (Configuration audio et MIDI → Réseau). Le correctif du
+  repli de source la rend inoffensive ; le nettoyage reste à faire.
+- **Options écartées, rouvrables** : afficher le seuil dans la légende de
+  Dispersion (`5,3 % / limite 5 %`) pour expliquer l'orange ; ajouter des
+  chevrons au vu-mètre si l'absence d'ampleur finit par manquer — sans
+  revenir aux neuf barres, dont l'échec est tracé dans le journal.
+- **Export des données** (EX-088) : demandé puis reporté, toujours ouvert.
+
+## Reprendre après une perte de contexte
+
+Dans l'ordre : `CLAUDE.md`, l'onglet **Risques et décisions** du cahier des
+charges (le *pourquoi* de tout ce qui a été tranché, y compris les fausses
+pistes), puis `git log` dont les messages portent le raisonnement. Le reste
+se relit dans le code, qui référence ses exigences.
