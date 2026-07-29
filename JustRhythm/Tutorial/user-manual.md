@@ -37,14 +37,14 @@ Like a tuner, the center only lights when you're actually on target — it's the
 
 That fourth state is why the reading tracks a *range* rather than a single average. An average alone would hide it: a note 40 ms early and one 40 ms late cancel out, and the app would call sloppy playing perfect. What the indicators react to is the range your recent notes are landing in — its center *and* its width. And it follows your **last 16 notes**, not the last single one: one note's error jumps around too much from keystroke to keystroke to steer by — you'd be chasing noise.
 
-Underneath, a word says the same thing in plain language — *on time*, *early*, *late*, *uneven* — and below that, the range as numbers: the average (`+` late, `−` early) followed by `±` and how spread out you are, in milliseconds. Three indicators can't show *how far* off you are, so that line is where to look for it, along with the stats row. If you just played a chord, a last line shows how many notes were in it and how spread out they were.
+Underneath, a word says the same thing in plain language — *on time*, *early*, *late*, *uneven* — and below that, a single number: your average error over those 16 notes (`+` late, `−` early). Three indicators can't show *how far* off you are, so that number is where to look for it. How scattered you are is in the stats row below, under **Dispersion**. If you just played a chord, a last line shows how many notes were in it and how spread out they were.
 
 **Graph.** A vertical line down the center represents the beat. Time scrolls from top to bottom — the newest events are at the bottom, near the line. Each note you play appears as a short bar: on the line if you were exactly on time, to the left if early, to the right if late. A green band around the center marks your "right" zone — notes landing inside it count as accurate. The two edges of the graph are meaningful too: they sit exactly half a subdivision away from the beat, which is the point where a note stops being "late on this step" and becomes "early on the next one." Metronome beats scroll down too, as faint horizontal lines, so you can see how your notes line up with the pulse over time. **Tap the graph** to switch to full-screen mode — same graph, larger, with just the essentials (the rolling average, tempo, note count) and nothing else on screen.
 
 **Stats row**, below the graph:
-- **Notes** — how many have been measured this session
+- **Notes** — how many you have played this session. It keeps counting for as long as you play. Once the statistics window starts discarding older notes, a small figure underneath says how many are still being kept — that is the sample the three figures beside it are based on
 - **Average** — your systematic bias: positive means you tend to drag, negative means you tend to rush
-- **Regularity** — how consistent you are around your own average (a standard deviation, in ms), independent of the bias above
+- **Dispersion** — how scattered your notes are around your own average (a standard deviation, in ms), independent of the bias above. **Higher is worse**: 0 would mean every note falls in exactly the same place. The small figure underneath is the same value as a percentage of one grid step, so it stays comparable across tempos — 17 ms is tight on a slow quarter note and loose on a fast sixteenth. It turns orange past the acceptable limit, which is the more forgiving of 5 % of the step and 15 ms
 - **In the zone** — the percentage of notes that landed inside your "right" zone
 
 **Transport bar**, at the bottom:
@@ -82,7 +82,20 @@ Off by default; both modes need your instrument to accept incoming MIDI notes, n
 Notes played within a short window (default 30 ms) count as one event, timestamped on the first note, with their spread shown alongside it — so playing a chord doesn't look like several separate timing errors. Set the window to 0 to count every note individually; lower it if you're working on fast repeated single notes rather than chords.
 
 ### Alignment
-Two numbers combine to place the click exactly on the beat as *heard*, not just as scheduled: an automatic compensation (measured from your current audio output's delay) and a manual correction you can nudge by ear, from −60 to +60 ms. **Don't tune the manual correction by feel** — everyone naturally anticipates the beat by 10–20 ms, and doing so just bakes that bias into the app's zero point. The reliable method: turn on Synced start, start your keyboard's drum machine, and adjust the manual correction until its click and JustRhythm's click merge into one sound. A **Test the sound** button plays an isolated click to check the audio chain without starting a session.
+Two numbers are involved, and they act at **different points** — which matters for setting them correctly.
+
+- The **automatic compensation** is measured from your audio output's delay. It advances the click so it is *heard* on the beat rather than merely scheduled on it. Nothing to do here.
+- The **manual correction** (−60 to +60 ms) shifts the timestamp of **incoming notes**, not the click. It exists to cancel the input chain's delay — key scan, USB transport, driver buffering — which makes your notes reach the app a few milliseconds after the key goes down. Turning this slider does not move the click at all: it only changes the measurement.
+
+**Never set the manual correction by feel.** You naturally anticipate the beat by 10–30 ms without noticing (see §6), and you would bake that bias into the device's zero point — an instrument that cannot contradict you is worthless.
+
+**The reliable method** compares you against an objective reference rather than your perception:
+
+1. Prepare a perfectly quantized MIDI file — a few bars of steady notes is enough.
+2. Play it from your keyboard's sequencer, with Synced start on, letting JustRhythm measure it as if it were your own playing.
+3. Adjust the manual correction until the notes settle on the graph's center line. A residual spread of 1–2 ms is normal — that's MIDI transport jitter.
+
+A **Test the sound** button plays an isolated click to check the audio chain without starting a session.
 
 ### Measurement
 The first two settings are expressed **relative to the reference grid**, not in fixed milliseconds — because the same error doesn't mean the same thing on a slow quarter note as on a fast sixteenth. Both show you the resulting value in ms for your current tempo, so you keep the concrete figure in view.
@@ -101,23 +114,34 @@ App version, and a one-line reminder: no data ever leaves the device, no account
 
 ---
 
-## 5. A typical calibration + practice session
+## 5. A typical session
 
-1. Settings → turn on **Synced start**.
-2. Start your keyboard's drum machine and JustRhythm together; listen to both clicks.
-3. Settings → Alignment → nudge **Manual correction** until the two clicks merge into one.
-4. Play normally. Watch the graph and the stats row build up.
-5. If you want a clean read for a specific passage, use **Clear statistics** right before you start it.
+1. **Once and for all**: calibrate the manual correction with a quantized file (§4, Alignment). It depends on your hardware, not on the piece — no need to revisit it every session.
+2. Settings → turn on **Synced start** if you're playing along with the keyboard's drum machine.
+3. Play normally. Watch the indicators; the graph and stats fill in.
+4. For a clean read on a specific passage, use **Clear statistics** right before you start it.
 
 ---
 
-## 6. What "In the zone" and "Regularity" actually mean
+## 6. What "In the zone" and "Dispersion" actually mean
 
 They measure two different things, and mixing them up leads to the wrong fix:
 
 - **Average** tells you if you have a *systematic* habit — always a little ahead or a little behind. That's a bias, and it's corrected by consciously adjusting when you play, not by practicing more of the same.
-- **Regularity** tells you how *scattered* your notes are around wherever your average sits, even if that average is exactly zero. That's inconsistency, and it's a different problem — more repetition and more control, not a timing adjustment.
+- **Dispersion** tells you how *scattered* your notes are around wherever your average sits, even if that average is exactly zero. That's inconsistency, and it's a different problem — more repetition and more control, not a timing adjustment.
 
 A high "In the zone" percentage with a non-zero average means you're being penalized for a bias that dodges around inside a wide enough tolerance zone — worth checking the Average figure specifically, not just the percentage.
 
-Both thresholds — the "right" zone and the regularity limit — scale with the grid rather than sitting at a fixed number of milliseconds, and both stop scaling at a floor (20 ms and 15 ms respectively). The reasoning is the same in each case: a percentage alone would eventually demand more precision than a hand can deliver or an ear can hear, so the more forgiving of the two criteria wins. In practice this means a green light on fast sixteenths is genuinely harder to earn than on slow quarter notes — which is the point.
+Both thresholds — the "right" zone and the dispersion limit — scale with the grid rather than sitting at a fixed number of milliseconds, and both stop scaling at a floor (20 ms and 15 ms respectively). The reasoning is the same in each case: a percentage alone would eventually demand more precision than a hand can deliver or an ear can hear, so the more forgiving of the two criteria wins. In practice this means a green light on fast sixteenths is genuinely harder to earn than on slow quarter notes — which is the point.
+
+### Why the app may contradict you
+
+It is common for a correctly calibrated player to be told they run 20–30 ms early while their playing *feels* perfectly placed. That is neither a fault of the device nor of the musician: when synchronising to a pulse, people spontaneously anticipate it, and that anticipation is not perceptible from the inside. The effect is well documented and close to universal.
+
+Does it need correcting, though? Not always — worth knowing before you go to war with it.
+
+In a **group**, everyone adjusts continuously to what they hear: individual anticipations largely cancel out, and the ensemble settles on a shared pulse. An absolute offset shared by everyone is musically invisible. What is audible is the gap *between* players, not each player's offset from some ideal clock.
+
+Systematic anticipation does matter in two cases: against a reference that doesn't adapt — studio click, backing track, sequencer — where it is both audible and recorded; and when it differs markedly from everyone else's, which puts you consistently ahead of them.
+
+**A practical consequence**, true for any calibration setting: a calibration error only shifts the **Average**. It never touches **Dispersion** or the *uneven* state. Those two are therefore usable unconditionally, even if you doubt your zero point — and they are also the ones that matter most in a group: scattered playing bothers everyone, playing consistently a little ahead bothers nobody.

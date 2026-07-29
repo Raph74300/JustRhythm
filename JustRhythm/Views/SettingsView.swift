@@ -192,7 +192,7 @@ struct SettingsView: View {
         } header: {
             Text("Alignment")
         } footer: {
-            Text("The click is advanced by the measured audio output delay, so it's heard on the beat. The manual correction adds to that. Never set it by feel: you naturally anticipate by 10 to 20 ms, and you'd bake that bias into the device's zero point.\n\nRecommended method: turn on synced start, start the keyboard's drum machine, and listen to both clicks together. Adjust the manual correction until they merge. The drum machine's sound and your notes' sound take the same output path: aligning them cancels out the difference between the two audio chains, which the blind slider can only guess at. What remains is the keyboard's scan time, 3 to 10 ms, beyond the reach of this method.")
+            Text("The two act at different points. The automatic compensation advances the click so it is heard on the beat rather than merely scheduled on it. The manual correction shifts the timestamp of incoming notes, to cancel the input chain's delay — key scan, transport, buffering. It does not move the click: it only changes the measurement.\n\nNever set it by feel: you naturally anticipate by 10 to 30 ms without noticing, and you'd bake that bias into the device's zero point.\n\nReliable method: play a perfectly quantized MIDI file from your keyboard's sequencer and adjust the manual correction until the notes settle on the graph's center line. You are then comparing the measurement against an objective reference instead of your perception. A residual spread of 1 to 2 ms is normal — that's transport jitter. What remains uncompensated is the key scan time, 3 to 10 ms, absent when the sequencer plays but present when you do.")
         }
     }
 

@@ -37,6 +37,13 @@ struct Placement: Equatable {
 }
 
 struct Stats {
+    /// Notes jouées depuis le début de la séance. (EX-080)
+    ///
+    /// Distincte de `count` : les trois indicateurs qui suivent ne portent que
+    /// sur la fenêtre glissante (EX-084), alors que ce total, lui, ne cesse de
+    /// monter. Les confondre bloquait le compteur dès la fenêtre atteinte.
+    var played = 0
+    /// Notes réellement retenues pour le bilan, plafonnées à la fenêtre.
     var count = 0
     var mean = 0.0          // secondes
     var sd = 0.0            // secondes
@@ -77,6 +84,9 @@ final class RhythmEngine {
     private var nextStep: Double = 0
 
     private var deltas: [Double] = []
+    /// Compté à part : `deltas` est plafonné par la fenêtre glissante et ne
+    /// peut donc pas servir à savoir combien de notes ont été jouées.
+    private var notesPlayed = 0
     private var openGroup: (index: Int, start: Double)?
     private var timer: DispatchSourceTimer?
 
@@ -116,10 +126,10 @@ final class RhythmEngine {
                 self.message = String(localized: "Session interrupted by the system.")
             }
         }
+        // Posée avant l'ouverture du client : le premier balayage retrouve
+        // ainsi le clavier directement, sans repli transitoire. (EX-013)
+        midi.preferredID = settings.lastSourceID
         midi.start()
-        if settings.lastSourceID != 0 {
-            midi.connect(uniqueID: settings.lastSourceID)
-        }
     }
 
     /// Période réelle de la grille, en secondes.
@@ -180,7 +190,7 @@ final class RhythmEngine {
             : nil
 
         hits.removeAll(); beats.removeAll(); deltas.removeAll()
-        lastDelta = nil; stats = Stats(); openGroup = nil
+        lastDelta = nil; stats = Stats(); openGroup = nil; notesPlayed = 0
 
         externallyTriggered = externalStart != nil
         gridLock.withLock {
@@ -434,6 +444,7 @@ final class RhythmEngine {
             }
 
             self.deltas.append(delta)
+            self.notesPlayed += 1
             // Fenêtre glissante : les premières notes de la séance ne doivent
             // pas plomber le bilan indéfiniment. (EX-084)
             let cap = max(self.settings.statsWindow, 10)
@@ -450,12 +461,14 @@ final class RhythmEngine {
         let mean = deltas.reduce(0, +) / Double(n)
         let variance = deltas.reduce(0) { $0 + ($1 - mean) * ($1 - mean) } / Double(n)
         let inZone = Double(deltas.filter { abs($0) <= tolerance }.count) / Double(n) * 100
-        stats = Stats(count: n, mean: mean, sd: variance.squareRoot(), inZone: inZone)
+        stats = Stats(played: notesPlayed, count: n, mean: mean,
+                      sd: variance.squareRoot(), inZone: inZone)
     }
 
     func resetStats() {                                    // (EX-085)
         hits.removeAll(); deltas.removeAll(); openGroup = nil
         lastDelta = nil
+        notesPlayed = 0
         stats = Stats()
     }
 

@@ -97,9 +97,11 @@ struct MainView: View {
                 Spacer()
 
                 HStack {
+                    // Le total joué, comme dans la rangée de statistiques : le
+                    // pourcentage qui suit, lui, porte sur la fenêtre.
                     Text(engine.stats.count > 0
                          ? String(format: NSLocalizedString("%d notes · %d %%", comment: ""),
-                                  engine.stats.count, Int(engine.stats.inZone))
+                                  engine.stats.played, Int(engine.stats.inZone))
                          : "—")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
@@ -176,13 +178,13 @@ struct MainView: View {
     // note : celui-ci change à chaque frappe, au point d'être illisible en
     // jouant. (EX-066)
 
+    /// La moyenne seule, et non la fourchette complète : la dispersion figure
+    /// déjà dans la rangée de statistiques, et deux nombres accolés sous le
+    /// verdict se lisaient mal en jouant.
     private var displayValue: String {
         guard let placement = engine.recentPlacement else { return "–" }
-        let mean = Int((placement.mean * 1000).rounded())
-        let deviation = Int((placement.deviation * 1000).rounded())
-        let sign = mean > 0 ? "+" : (mean < 0 ? "−" : "")
-        return String(format: NSLocalizedString("%@%d ± %d ms", comment: ""),
-                      sign, abs(mean), deviation)
+        let ms = Int((placement.mean * 1000).rounded())
+        return "\(ms > 0 ? "+" : (ms < 0 ? "−" : ""))\(abs(ms)) ms"
     }
 
     private var compactValue: String { displayValue }
@@ -364,16 +366,21 @@ struct StatsGrid: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            cell(String(localized: "Notes"), value: "\(engine.stats.count)")
+            cell(String(localized: "Notes"),
+                 value: "\(engine.stats.played)",
+                 caption: sampleCaption)
             divider
             cell(String(localized: "Average"),
                  value: hasData ? signed(engine.stats.mean) : "–",
                  unit: hasData ? "ms" : nil)
             divider
-            cell(String(localized: "Regularity"),
+            // « Dispersion » et non « Régularité » : c'est un écart-type, donc
+            // plus le nombre est grand, moins le jeu est régulier. L'ancien
+            // libellé se lisait à l'envers.
+            cell(String(localized: "Dispersion"),
                  value: hasData ? String(format: "%.1f", engine.stats.sd * 1000) : "–",
                  unit: hasData ? "ms" : nil,
-                 tint: regularityTint,
+                 tint: dispersionTint,
                  caption: hasData ? String(format: "%.1f %%", ratio) : nil)
             divider
             cell(String(localized: "In the zone"),
@@ -385,12 +392,23 @@ struct StatsGrid: View {
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
+    /// Taille de l'échantillon, affichée seulement quand la fenêtre glissante
+    /// sature. (EX-084)
+    ///
+    /// Tant que toutes les notes de la séance sont retenues, la préciser
+    /// n'apprendrait rien ; passé ce point, elle explique pourquoi les trois
+    /// autres cases ne décrivent plus toute la séance.
+    private var sampleCaption: String? {
+        guard engine.stats.played > engine.stats.count else { return nil }
+        return String(format: NSLocalizedString("%d kept", comment: ""), engine.stats.count)
+    }
+
     /// Dispersion rapportée à l'intervalle : comparable d'un tempo à l'autre,
     /// contrairement à la valeur en millisecondes. (EX-082)
     private var ratio: Double { step > 0 ? engine.stats.sd / step * 100 : 0 }
 
     /// Vert tant que la dispersion reste acceptable, orange au-delà.
-    private var regularityTint: Color {
+    private var dispersionTint: Color {
         guard hasData else { return .primary }
         return Regularity.isAcceptable(sd: engine.stats.sd, step: step)
             ? Palette.onTime : Palette.offTime

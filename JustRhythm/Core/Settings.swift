@@ -156,6 +156,11 @@ enum Tolerance {
 
 /// Jusqu'où la dispersion reste compatible avec un rendu propre. (EX-082)
 ///
+/// Le type porte le nom du critère — la régularité —, la valeur qu'il juge
+/// s'affiche sous le nom de « Dispersion » : c'est un écart-type, donc plus
+/// il est grand, moins le jeu est régulier. Les deux mots ne désignent pas la
+/// même chose et l'interface doit afficher celui qui se lit dans le bon sens.
+///
 /// Un pourcentage seul ne tient pas : la variabilité motrice humaine a un
 /// plancher qui ne se contracte pas indéfiniment avec le tempo. On retient
 /// donc le plus permissif des deux critères.

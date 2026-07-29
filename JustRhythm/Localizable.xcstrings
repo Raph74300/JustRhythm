@@ -11,16 +11,6 @@
         }
       }
     },
-    "%@%d ± %d ms": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@%d ± %d ms"
-          }
-        }
-      }
-    },
     "%d %% · ± %d ms": {
       "localizations": {
         "fr": {
@@ -58,6 +48,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%d canaux"
+          }
+        }
+      }
+    },
+    "%d kept": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d retenues"
           }
         }
       }
@@ -328,6 +328,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bois plus grave que les claves, moins agressif sur la durée."
+          }
+        }
+      }
+    },
+    "Dispersion": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dispersion"
           }
         }
       }
@@ -630,16 +640,6 @@
         }
       }
     },
-    "Regularity": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Régularité"
-          }
-        }
-      }
-    },
     "Reward": {
       "localizations": {
         "fr": {
@@ -800,16 +800,6 @@
         }
       }
     },
-    "The click is advanced by the measured audio output delay, so it's heard on the beat. The manual correction adds to that. Never set it by feel: you naturally anticipate by 10 to 20 ms, and you'd bake that bias into the device's zero point.\n\nRecommended method: turn on synced start, start the keyboard's drum machine, and listen to both clicks together. Adjust the manual correction until they merge. The drum machine's sound and your notes' sound take the same output path: aligning them cancels out the difference between the two audio chains, which the blind slider can only guess at. What remains is the keyboard's scan time, 3 to 10 ms, beyond the reach of this method.": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Le clic est avancé du retard mesuré de la sortie audio, pour être entendu sur le temps. La correction manuelle s'y ajoute. Ne la règle jamais sur ton ressenti : on anticipe naturellement de 10 à 20 ms, et tu inscrirais ce défaut dans le zéro de l'appareil.\n\nMéthode recommandée : active le démarrage synchronisé, lance la boîte à rythmes du clavier et écoute les deux clics ensemble. Règle la correction manuelle jusqu'à ce qu'ils se confondent. Le son de la boîte à rythmes et celui de tes notes empruntent le même chemin de sortie : les aligner annule la différence entre les deux chaînes audio, ce que le curseur à l'aveugle ne fait que deviner. Il reste le temps de balayage du clavier, 3 à 10 ms, hors de portée de cette méthode."
-          }
-        }
-      }
-    },
     "The counters reset to zero. The metronome isn't stopped.": {
       "localizations": {
         "fr": {
@@ -836,6 +826,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "L'attaque la plus nette des cinq. Le meilleur choix pour du travail fin et pour régler l'alignement."
+          }
+        }
+      }
+    },
+    "The two act at different points. The automatic compensation advances the click so it is heard on the beat rather than merely scheduled on it. The manual correction shifts the timestamp of incoming notes, to cancel the input chain's delay — key scan, transport, buffering. It does not move the click: it only changes the measurement.\n\nNever set it by feel: you naturally anticipate by 10 to 30 ms without noticing, and you'd bake that bias into the device's zero point.\n\nReliable method: play a perfectly quantized MIDI file from your keyboard's sequencer and adjust the manual correction until the notes settle on the graph's center line. You are then comparing the measurement against an objective reference instead of your perception. A residual spread of 1 to 2 ms is normal — that's transport jitter. What remains uncompensated is the key scan time, 3 to 10 ms, absent when the sequencer plays but present when you do.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les deux n'agissent pas au même endroit. La compensation automatique avance le clic pour qu'il soit entendu sur le temps, et non simplement programmé sur le temps. La correction manuelle décale l'horodatage des notes reçues, pour annuler le retard de la chaîne d'entrée — balayage du clavier, transport, tampons. Elle ne déplace pas le clic : elle ne change que la mesure.\n\nNe la règle jamais au ressenti : on anticipe naturellement de 10 à 30 ms sans s'en apercevoir, et tu inscrirais ce défaut dans le zéro de l'appareil.\n\nMéthode fiable : joue un fichier MIDI parfaitement quantifié depuis le séquenceur de ton clavier et ajuste la correction manuelle jusqu'à ce que les notes se posent sur la ligne centrale du graphe. Tu compares alors la mesure à une référence objective, et non à ta perception. Une dispersion résiduelle de 1 à 2 ms est normale : c'est la gigue du transport. Reste non compensé le temps de balayage du clavier, 3 à 10 ms, absent quand le séquenceur joue mais présent quand c'est toi."
           }
         }
       }

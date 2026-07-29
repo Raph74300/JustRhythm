@@ -17,7 +17,7 @@ collected — see `PrivacyInfo.xcprivacy`.
   average alone would call perfect — early and late errors cancel out in a mean
 - Real-time scrolling graph: a centered plumb line is the beat, notes land
   left (early), right (late), or on the line
-- Live stats: note count, average bias, regularity, percentage in the "right"
+- Live stats: note count, average bias, dispersion, percentage in the "right"
   zone
 - Metronome with five synthesized click tones, adjustable grid subdivision
   and accent
@@ -35,7 +35,8 @@ collected — see `PrivacyInfo.xcprivacy`.
   (`Localizable.xcstrings`); note names switch between letters (C, D, E…) and
   solfège (Do, Ré, Mi…) the same way
 
-Full walkthrough for end users: `Tutorial/user-manual.md`.
+Full walkthrough for end users: `Tutorial/user-manual.md`
+(`Tutorial/manuel-utilisateur.md` in French).
 
 ## Project structure
 
@@ -65,7 +66,8 @@ moving a file on disk is enough, no project file surgery needed.
   playbook, with the real pitfalls hit along the way (missing distribution
   certificate, encryption compliance popup, orientation lock). Reusable as-is
   for the next app on the same developer account.
-- `user-manual.md` — end-user documentation.
+- `user-manual.md` / `manuel-utilisateur.md` — end-user documentation,
+  English and French. Keep the two in step: a fix in one belongs in the other.
 - `instructions-projet.md`, `parcours-etapes.md` — the original learning
   path this project was built from.
 

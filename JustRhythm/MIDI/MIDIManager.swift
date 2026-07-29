@@ -31,6 +31,15 @@ final class MIDIManager {
     var selectedID: Int32 = 0
     var lastNote: String?
 
+    /// Source choisie explicitement, retenue d'une séance à l'autre. (EX-013)
+    ///
+    /// Distincte de `selectedID`, qui est la source réellement connectée à
+    /// l'instant : au lancement, le clavier n'est pas toujours énuméré à temps
+    /// et il faut bien se rabattre sur autre chose. Sans cette mémoire, ce
+    /// repli deviendrait définitif — il existe encore au balayage suivant,
+    /// donc rien ne ramènerait jamais au clavier voulu.
+    @ObservationIgnored var preferredID: Int32 = 0
+
     /// (instant en secondes host, note, vélocité, canal 0-15)
     @ObservationIgnored var onNote: ((Double, UInt8, UInt8, UInt8) -> Void)?
 
@@ -83,9 +92,14 @@ final class MIDIManager {
         }
         sources = found
 
-        // La source enregistrée est privilégiée : c'est ce qui permet de
-        // retrouver son clavier au lancement suivant sans rien toucher. (EX-013)
-        if let current = sources.first(where: { $0.id == selectedID }) {
+        // La source enregistrée est privilégiée à chaque balayage, et non au
+        // seul premier lancement : c'est ce qui permet de retrouver son clavier
+        // dès qu'il apparaît, même si l'application a dû se rabattre sur une
+        // autre source en l'attendant. (EX-013)
+        if let preferred = sources.first(where: { $0.id == preferredID }) {
+            selectedID = preferred.id
+            connect(endpoint: preferred.endpoint)
+        } else if let current = sources.first(where: { $0.id == selectedID }) {
             connect(endpoint: current.endpoint)
         } else if let first = sources.first {
             if let previousName { onSourceLost?(previousName) }
@@ -100,7 +114,10 @@ final class MIDIManager {
         }
     }
 
+    /// Choix explicite de l'utilisateur : il devient la source privilégiée,
+    /// et le restera aux balayages suivants même s'il disparaît un moment.
     func connect(uniqueID: Int32) {
+        preferredID = uniqueID
         selectedID = uniqueID
         if let match = sources.first(where: { $0.id == uniqueID }) {
             connect(endpoint: match.endpoint)
