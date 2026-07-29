@@ -69,7 +69,7 @@ Choose the subdivision your notes are judged against (quarter notes, eighth note
 ### Synchronization
 **Synced start** — when your keyboard has a built-in drum machine or sequencer, turning this on makes JustRhythm start on its Start message instead of a fixed delay, and keep following its MIDI clock afterward so the two never drift apart. With it off, you start and stop manually as usual.
 
-While the clock is driving, the tempo shown reads **bpm received** and the app adopts it as its own: the "right" zone and the graph scale follow it, and the app's tempo controls are greyed out — setting them by hand would be pointless, since the next beat would overwrite your value. The received tempo is kept when you stop, so the next manual session starts from the tempo you were actually playing at rather than from a stale setting.
+While the clock is driving, the tempo shown reads **bpm received** and the app adopts it as its own: the "right" zone and the graph scale follow it, and the app's tempo controls are greyed out — setting them by hand would be pointless, since the next beat would overwrite your value. Change the tempo on the keyboard and the app follows within a beat. The received tempo is kept when you stop, so the next manual session starts from the tempo you were actually playing at rather than from a stale setting.
 
 ### Reward
 An optional sound plays back on your instrument when a note lands in the "right" zone — a small, immediate confirmation you're on time. Two modes:

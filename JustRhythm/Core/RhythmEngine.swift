@@ -83,6 +83,11 @@ final class RhythmEngine {
     // — Suivi de l'horloge MIDI (EX-054) —
     /// 24 impulsions par noire, c'est la définition du MIDI Clock.
     private static let clocksPerBeat = 24
+    /// Au-delà de cet écart relatif, un intervalle n'est plus de la gigue mais
+    /// un tempo qu'on vient de changer sur le clavier. Le seuil laisse passer
+    /// largement la gigue du transport — de l'ordre du pour cent — et la perte
+    /// d'une impulsion d'horloge, qui allonge un temps de 1/24, soit 4,2 %.
+    private static let tempoJumpRatio = 0.08
     private var clockCount = 0
     private var lastBeatTime: Double?
     private var smoothedBeat: Double?
@@ -318,7 +323,19 @@ final class RhythmEngine {
         // sursaut, pas un tempo. On l'ignore plutôt que de suivre du bruit.
         guard interval > 0.2, interval < 3.0 else { return }
 
-        let smoothed = smoothedBeat.map { $0 * 0.8 + interval * 0.2 } ?? interval
+        // Un lissage assez fort pour absorber la gigue met une dizaine de temps
+        // à rejoindre un tempo qu'on vient de changer au clavier — sept
+        // secondes de flottement, période et phase en retard ensemble. Plutôt
+        // que d'affaiblir le lissage, ce qui coûterait de la gigue en
+        // permanence pour un gain ponctuel, on reconnaît le changement franc et
+        // on l'adopte d'un coup.
+        let smoothed: Double
+        if let previous = smoothedBeat,
+           abs(interval - previous) / previous > Self.tempoJumpRatio {
+            smoothed = interval
+        } else {
+            smoothed = smoothedBeat.map { $0 * 0.8 + interval * 0.2 } ?? interval
+        }
         smoothedBeat = smoothed
         clockBpm = 60.0 / smoothed
         adoptClockTempo()
