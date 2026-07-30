@@ -14,7 +14,6 @@ struct Beat: Identifiable {
     let id = UUID()
     let time: Double
     let isMain: Bool        // sur le temps, par opposition à une subdivision
-    let isAccent: Bool      // premier temps de la mesure (EX-042)
 }
 
 /// Où tombent réellement les dernières notes : un centre et une largeur.
@@ -82,6 +81,25 @@ final class RhythmEngine {
     private var period: Double = 0.75
     private var stepIndex = 0
     private var nextStep: Double = 0
+
+    /// Numéro de pas de grille auquel correspond `anchor`, compté depuis le
+    /// départ de la séance. (EX-042)
+    ///
+    /// `stepIndex` ne peut pas porter la position musicale : le suivi d'horloge
+    /// le remet à zéro à chaque noire reçue, pour que le bruit de mesure ne soit
+    /// pas amplifié par sa croissance. Il mesure donc un écart à l'ancre, pas un
+    /// rang dans la mesure. Les confondre faisait disparaître les temps forts
+    /// dès que la synchro était active : `stepIndex` ne dépassait jamais deux ou
+    /// trois entre deux corrections, et ne tombait donc jamais sur un multiple
+    /// du nombre de pas par mesure.
+    private var anchorStep = 0
+    /// Position absolue dans la grille : c'est elle qui dit le temps fort.
+    private var gridPosition: Int { anchorStep + stepIndex }
+
+    /// Noires reçues depuis le message Start, pour situer l'ancre dans la
+    /// mesure. Le Start signifie « depuis le début » : il donne donc le premier
+    /// temps, et tout se compte à partir de là.
+    private var beatsSinceStart = 0
 
     private var deltas: [Double] = []
     /// Compté à part : `deltas` est plafonné par la fenêtre glissante et ne
@@ -166,15 +184,16 @@ final class RhythmEngine {
         Tolerance.limit(percent: settings.tolerancePercent, step: gridPeriod)
     }
 
-    /// Durée d'une mesure, en secondes.
+    /// Correction d'entrée réellement appliquée. (EX-035)
     ///
-    /// Passe par `gridPeriod`, donc suit l'horloge du clavier quand elle est
-    /// reçue. Sans accent réglé, `beatsPerBar` vaut 0 et il n'y a pas de mesure
-    /// à proprement parler : on retient quatre temps, faute de mieux, plutôt
-    /// que de rendre zéro.
-    var barDuration: Double {
-        let beat = gridPeriod * Double(settings.subdivision.rawValue)
-        return beat * Double(settings.beatsPerBar > 0 ? settings.beatsPerBar : 4)
+    /// Deux valeurs, choisies par l'application et non par l'utilisateur. Quand
+    /// l'instrument transmet son horloge, ses messages temps réel passent devant
+    /// les notes dans sa file de sortie : les frappes sortent plus tard, et la
+    /// chaîne d'entrée est réellement plus longue. Sur un CVP-303 l'écart mesuré
+    /// est d'une quinzaine de millisecondes — assez pour fausser un bilan, et
+    /// bien trop pour qu'on demande à quelqu'un d'y penser à chaque bascule.
+    var activeAlignmentMs: Double {
+        clockBpm != nil ? settings.syncAlignmentMs : settings.manualAlignmentMs
     }
 
 
@@ -244,6 +263,7 @@ final class RhythmEngine {
         gridLock.withLock {
             period = settings.stepPeriod
             anchor = externalStart ?? (HostClock.now + 0.25)
+            anchorStep = 0
             stepIndex = 0
             nextStep = anchor
 
@@ -341,6 +361,9 @@ final class RhythmEngine {
                 let t = max(HostClock.now + 0.10, self.nextStep)
                 self.period = self.settings.stepPeriod
                 self.anchor = t
+                // Un changement de tempo à la main relance la mesure : sans
+                // référence extérieure, aucune raison de préserver un rang.
+                self.anchorStep = 0
                 self.stepIndex = 0
                 self.nextStep = t
             }
@@ -370,19 +393,16 @@ final class RhythmEngine {
         gridLock.withLock {
             while nextStep < horizon {
                 let subdiv = settings.subdivision.rawValue
-                let perBar = settings.stepsPerBar
-                let isMain = stepIndex % subdiv == 0
-                let isAccent = perBar > 0 && stepIndex % perBar == 0
+                let isMain = gridPosition % subdiv == 0
 
                 // Le clic ne sonne que sur les temps : cliquer les subdivisions
                 // est en phase 3 (EX-044). La grille, elle, est déjà fine.
                 if settings.clickEnabled && isMain {
                     metronome.schedule(at: nextStep,
                                        voice: settings.clickVoice,
-                                       accent: isAccent,
                                        volume: Float(settings.volume))
                 }
-                scheduled.append(Beat(time: nextStep, isMain: isMain, isAccent: isAccent))
+                scheduled.append(Beat(time: nextStep, isMain: isMain))
                 stepIndex += 1
                 nextStep = anchor + Double(stepIndex) * period
             }
@@ -558,7 +578,7 @@ final class RhythmEngine {
             // sorties anticipées qui suivent — seuil de vélocité, séance à
             // l'arrêt, regroupement d'accord — et une seule oubliée rendrait
             // des notes muettes.
-            let corrected = time + self.settings.manualAlignmentMs / 1000
+            let corrected = time + self.activeAlignmentMs / 1000
             let delta = corrected - self.nearestStep(corrected)
 
             // Le module sonore répond à toutes les frappes, y compris sous le
@@ -702,8 +722,7 @@ final class RhythmEngine {
             Hit(time: now - Double(samples.count - i) * 0.45, delta: d,
                 notes: [UInt8(60 + i)], spread: 0)
         }
-        beats = (0..<8).map { Beat(time: now - Double($0) * 0.75, isMain: true,
-                                   isAccent: $0 % 4 == 0) }
+        beats = (0..<8).map { Beat(time: now - Double($0) * 0.75, isMain: true) }
         deltas = samples
         lastDelta = samples.last
         recomputeStats()

@@ -72,9 +72,9 @@ final class MetronomeEngine {
     private var scratch: UnsafeMutablePointer<Double>?
     private var scratchCapacity = 0
 
-    /// Les cinq timbres dans leurs deux variantes, synthétisés une fois au
-    /// démarrage. Une cinquantaine de kilo-octets : autant tout précalculer.
-    private var banks: [ClickVoice: (normal: [Float], accent: [Float])] = [:]
+    /// Les cinq timbres, synthétisés une fois au démarrage. Quelques dizaines
+    /// de kilo-octets : autant tout précalculer.
+    private var banks: [ClickVoice: [Float]] = [:]
 
     /// Prévenu quand la session audio est interrompue puis rétablie. (EX-050)
     var onInterruption: ((Bool) -> Void)?
@@ -117,8 +117,7 @@ final class MetronomeEngine {
 
         banks = [:]
         for voice in ClickVoice.allCases {
-            banks[voice] = (normal: voice.samples(rate: sampleRate, accent: false),
-                            accent: voice.samples(rate: sampleRate, accent: true))
+            banks[voice] = voice.samples(rate: sampleRate)
         }
         observeInterruptions()
 
@@ -257,7 +256,7 @@ final class MetronomeEngine {
     ///
     /// On retire `outputLatency` : c'est le son perçu qui doit tomber sur le
     /// temps, pas l'ordre donné au moteur. (EX-034)
-    func schedule(at hostSeconds: Double, voice: ClickVoice, accent: Bool, volume: Float) {
+    func schedule(at hostSeconds: Double, voice: ClickVoice, volume: Float) {
         guard started, let bank = banks[voice] else { return }
 
         os_unfair_lock_lock(lock)
@@ -272,14 +271,14 @@ final class MetronomeEngine {
 
         os_unfair_lock_lock(lock)
         shared.pending.append(Voice(startFrame: frame,
-                                    samples: accent ? bank.accent : bank.normal,
+                                    samples: bank,
                                     gain: max(0, min(1, volume))))
         os_unfair_lock_unlock(lock)
     }
 
     /// Clic isolé, pour vérifier la chaîne audio sans lancer de séance. (EX-052)
     func playTestClick(voice: ClickVoice, volume: Float) {
-        schedule(at: HostClock.now + 0.08, voice: voice, accent: true, volume: volume)
+        schedule(at: HostClock.now + 0.08, voice: voice, volume: volume)
     }
 
     // =====================================================================

@@ -90,19 +90,13 @@ struct SettingsView: View {
         }
     }
 
-    /// La grille sur laquelle les notes sont jugées. (EX-041 / EX-042)
+    /// La grille sur laquelle les notes sont jugées. (EX-041)
     private var gridSection: some View {
         Section {
             Picker("Reference grid", selection: Binding(
                 get: { s.subdivision },
                 set: { s.subdivision = $0; engine.reanchor() })) {
                 ForEach(Subdivision.allCases) { Text($0.label).tag($0) }
-            }
-
-            Picker("Beats per bar", selection: Binding(
-                get: { s.beatsPerBar }, set: { s.beatsPerBar = $0 })) {
-                Text("No accent").tag(0)
-                ForEach(2...12, id: \.self) { Text("\($0)").tag($0) }
             }
 
             Picker("Click tone", selection: Binding(
@@ -206,20 +200,43 @@ struct SettingsView: View {
                     .monospacedDigit()
             }
 
-            VStack(alignment: .leading, spacing: 6) {
-                LabeledContent("Manual correction") {
-                    Text("\(Int(s.manualAlignmentMs)) ms").monospacedDigit()
-                }
-                Slider(value: Binding(get: { s.manualAlignmentMs },
-                                      set: { s.manualAlignmentMs = $0.rounded() }),
-                       in: -60...60, step: 1)
-            }
+            correctionRow("iPhone clock", value: s.manualAlignmentMs,
+                          active: engine.clockBpm == nil) { s.manualAlignmentMs = $0 }
+
+            correctionRow("Keyboard clock", value: s.syncAlignmentMs,
+                          active: engine.clockBpm != nil) { s.syncAlignmentMs = $0 }
 
             Button("Test the sound") { engine.testClick() }
         } header: {
             Text("Alignment")
         } footer: {
-            Text("The two act at different points. The automatic compensation advances the click so it is heard on the beat rather than merely scheduled on it. The manual correction shifts the timestamp of incoming notes, to cancel the input chain's delay — key scan, transport, buffering. It does not move the click: it only changes the measurement.\n\nNever set it by feel: you naturally anticipate by 10 to 30 ms without noticing, and you'd bake that bias into the device's zero point.\n\nReliable method: play a perfectly quantized MIDI file from your keyboard's sequencer and adjust the manual correction until the notes settle on the graph's center line. You are then comparing the measurement against an objective reference instead of your perception. A residual spread of 1 to 2 ms is normal — that's transport jitter. What remains uncompensated is the key scan time, 3 to 10 ms, absent when the sequencer plays but present when you do.")
+            Text("The automatic compensation advances the click so it is heard on the beat rather than merely scheduled on it. The corrections below shift the timestamp of incoming notes instead, to cancel the input chain's delay — key scan, transport, buffering. They do not move the click: they only change the measurement.\n\nThere are two because the chain really is longer when the instrument transmits its clock: its real-time messages take priority in its output queue, so your keystrokes leave behind them. The app knows which case it is in and applies the right one — you never have to think about it while playing.\n\nNever set them by feel: you naturally anticipate by 10 to 30 ms without noticing, and you'd bake that bias into the device's zero point. Measure instead — record the key's mechanical thud and the iPhone's sound together, subtract the automatic compensation above from the interval, and enter the remainder as a negative value. Expect a few milliseconds on its own, around fifteen more with the clock running.")
+        }
+    }
+
+    /// Une correction, marquée quand c'est elle qui s'applique.
+    private func correctionRow(_ title: LocalizedStringKey, value: Double,
+                               active: Bool, set: @escaping (Double) -> Void) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            LabeledContent {
+                Text("\(Int(value)) ms").monospacedDigit()
+            } label: {
+                HStack(spacing: 6) {
+                    Text(title)
+                    // Le repère dit laquelle est en vigueur à l'instant : sans
+                    // lui, deux valeurs voisines n'apprendraient rien de plus
+                    // qu'une seule, et il faudrait deviner. (EX-117 : jamais la
+                    // couleur seule — c'est un symbole doublé d'un libellé.)
+                    if active {
+                        Label("in force", systemImage: "checkmark.circle.fill")
+                            .labelStyle(.iconOnly)
+                            .foregroundStyle(.tint)
+                            .accessibilityLabel(Text("in force"))
+                    }
+                }
+            }
+            Slider(value: Binding(get: { value }, set: { set($0.rounded()) }),
+                   in: -60...60, step: 1)
         }
     }
 
@@ -239,7 +256,7 @@ struct SettingsView: View {
                 }
                 Slider(value: Binding(get: { s.tolerancePercent },
                                       set: { s.tolerancePercent = $0.rounded() }),
-                       in: 1...15, step: 1)
+                       in: 1...30, step: 1)
             }
 
             // (EX-067)
@@ -267,7 +284,7 @@ struct SettingsView: View {
         } header: {
             Text("Measurement")
         } footer: {
-            Text("Both are expressed relative to the reference grid, because the same error in milliseconds doesn't mean the same thing on a slow quarter note as on a fast sixteenth.\n\nThe “right” zone sets the width of the green band and the basis for the percentage. It tightens on its own as the grid gets finer, but never goes below 20 ms — under that an error stops being audible, so demanding better would be arbitrary.\n\nThe scale is capped at half a subdivision: past that point a note belongs to the next grid step, so there is nothing to show there. Lower it to zoom in; the measurement itself doesn't change. Since both follow the tempo, changing it mid-session also shifts the percentage already accumulated.\n\nThe statistics window limits the summary to the most recent notes, so a hesitant start to a session doesn't weigh it down indefinitely.")
+            Text("Both are expressed relative to the reference grid, because the same error in milliseconds doesn't mean the same thing on a slow quarter note as on a fast sixteenth.\n\nThe “right” zone sets the width of the green band and the basis for the percentage. It tightens on its own as the grid gets finer, but never goes below 20 ms — under that an error stops being audible, so demanding better would be arbitrary.\n\nOpen it up for a beginner, or for a fine grid: on sixteenths a tight zone asks for a precision nobody has starting out, and an indicator that is never green teaches nothing. It stops at 30 % because half a subdivision is where a note already belongs to the next grid step — a zone reaching that far would call everything accurate. Widening it changes only the green band, the percentage and the readout: the position of each note on the graph, the average and the dispersion stay exactly as measured.\n\nThe scale is capped at half a subdivision: past that point a note belongs to the next grid step, so there is nothing to show there. Lower it to zoom in; the measurement itself doesn't change. Since both follow the tempo, changing it mid-session also shifts the percentage already accumulated.\n\nThe statistics window limits the summary to the most recent notes, so a hesitant start to a session doesn't weigh it down indefinitely.")
         }
     }
 

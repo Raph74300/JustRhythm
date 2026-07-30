@@ -46,18 +46,18 @@ enum ClickVoice: Int, CaseIterable, Identifiable {
 
     // =====================================================================
 
-    /// Synthétise le timbre. `accent` monte la hauteur et le niveau. (EX-042)
-    func samples(rate: Double, accent: Bool) -> [Float] {
+    /// Synthétise le timbre.
+    func samples(rate: Double) -> [Float] {
         let count = max(1, Int(rate * duration))
         var out = [Float](repeating: 0, count: count)
-        var noise = Noise(seed: accent ? 0x9E37_79B9 : 0x85EB_CA6B)
+        var noise = Noise(seed: 0x85EB_CA6B)
 
         switch self {
 
         case .claves:
             // Une sinusoïde fortement amortie : c'est physiquement ce qu'est
             // une paire de claves. Une pointe de bruit donne le « tock ».
-            let frequency = accent ? 2800.0 : 2500.0
+            let frequency = 2500.0
             for i in 0..<count {
                 let t = Double(i) / rate
                 out[i] = Float(sin(2 * .pi * frequency * t) * exp(-95 * t)
@@ -65,7 +65,7 @@ enum ClickVoice: Int, CaseIterable, Identifiable {
             }
 
         case .woodblock:
-            let f1 = accent ? 1200.0 : 900.0
+            let f1 = 900.0
             for i in 0..<count {
                 let t = Double(i) / rate
                 let body = (sin(2 * .pi * f1 * t) + 0.5 * sin(2 * .pi * f1 * 1.5 * t)) * exp(-62 * t)
@@ -73,7 +73,7 @@ enum ClickVoice: Int, CaseIterable, Identifiable {
             }
 
         case .click:
-            let frequency = accent ? 1600.0 : 1050.0
+            let frequency = 1050.0
             for i in 0..<count {
                 let t = Double(i) / rate
                 let square = sin(2 * .pi * frequency * t) >= 0 ? 1.0 : -1.0
@@ -94,7 +94,7 @@ enum ClickVoice: Int, CaseIterable, Identifiable {
         case .kick:
             // Balayage de hauteur : la fréquence descend vite vers le grave.
             // La phase doit être accumulée, pas recalculée à chaque échantillon.
-            let start = accent ? 170.0 : 140.0
+            let start = 140.0
             var phase = 0.0
             for i in 0..<count {
                 let t = Double(i) / rate
@@ -107,7 +107,7 @@ enum ClickVoice: Int, CaseIterable, Identifiable {
         var peak: Float = 0
         for value in out { peak = max(peak, abs(value)) }
         guard peak > 0.0001 else { return out }
-        let factor = (accent ? Float(0.95) : Float(0.72)) / peak
+        let factor = Float(0.72) / peak
         return out.map { $0 * factor }
     }
 }

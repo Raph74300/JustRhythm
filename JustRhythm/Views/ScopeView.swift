@@ -71,15 +71,9 @@ struct ScopeView: View {
             for beat in engine.beats {
                 let y = (now - beat.time) * pxPerSecond
                 guard y > -2, y < size.height else { continue }
-                let opacity = beat.isAccent ? 0.9 : (beat.isMain ? 0.5 : 0.2)
+                let opacity = beat.isMain ? 0.5 : 0.2
                 context.fill(Path(CGRect(x: 0, y: y, width: size.width, height: 0.5)),
                              with: .color(Palette.beatLine.opacity(opacity)))
-                if beat.isAccent {
-                    for rect in [CGRect(x: 0, y: y - 1, width: 14, height: 2),
-                                 CGRect(x: size.width - 14, y: y - 1, width: 14, height: 2)] {
-                        context.fill(Path(rect), with: .color(Palette.beatLine))
-                    }
-                }
             }
         }
 

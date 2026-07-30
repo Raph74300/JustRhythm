@@ -64,7 +64,7 @@ A message may appear just above the transport bar — e.g. a warning that your a
 Pick your keyboard if more than one is available, see the last note received, restrict listening to a single MIDI channel, and set a minimum velocity below which notes are ignored (useful to filter out accidental light touches).
 
 ### Grid & sound
-Choose the subdivision your notes are judged against (quarter notes, eighth notes, triplets, sixteenths), how many beats per bar get an accent, and the metronome's click sound — five options, each with a short note on when it's the right choice (Claves is the sharpest attack and the best pick for calibrating alignment; Kick drum is felt more than heard and should never be used for that purpose).
+Choose the subdivision your notes are judged against (quarter notes, eighth notes, triplets, sixteenths) and the metronome's click sound — five options, each with a short note on when it's the right choice (Claves is the sharpest attack and the best pick for calibrating alignment; Kick drum is felt more than heard and should never be used for that purpose).
 
 ### Synchronization
 **Synced start** — when your keyboard has a built-in drum machine or sequencer, turning this on makes JustRhythm start on its Start message instead of a fixed delay, and keep following its MIDI clock afterward so the two never drift apart. With it off, you start and stop manually as usual.

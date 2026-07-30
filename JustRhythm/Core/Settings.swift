@@ -58,8 +58,6 @@ final class Settings {
     var volume: Double { didSet { store.set(volume, forKey: K.volume) } }
     /// (EX-041)
     var subdivision: Subdivision { didSet { store.set(subdivision.rawValue, forKey: K.subdiv) } }
-    /// 0 = aucun accent, sinon 2 à 12. (EX-042)
-    var beatsPerBar: Int { didSet { store.set(beatsPerBar, forKey: K.bar) } }
     /// (EX-051)
     var clickVoice: ClickVoice { didSet { store.set(clickVoice.rawValue, forKey: K.voice) } }
     /// Le métronome démarre sur le message Start de la boîte à rythmes, et son
@@ -74,6 +72,15 @@ final class Settings {
 
     // — Configuration : ce qu'on règle une fois, donc derrière l'engrenage —
     var manualAlignmentMs: Double { didSet { store.set(manualAlignmentMs, forKey: K.align) } }
+    /// Correction appliquée quand l'horloge du clavier est suivie. (EX-035)
+    ///
+    /// Une valeur à part, et non un caprice : quand l'instrument transmet son
+    /// horloge, les messages temps réel passent devant les notes dans sa file de
+    /// sortie, et les frappes sortent donc plus tard. La chaîne d'entrée est
+    /// réellement plus longue dans ce mode — mesuré à une quinzaine de
+    /// millisecondes de plus sur un CVP-303. L'application sait dans quel mode
+    /// elle est : c'est à elle de choisir, pas à l'utilisateur de s'en souvenir.
+    var syncAlignmentMs: Double { didSet { store.set(syncAlignmentMs, forKey: K.syncAlign) } }
     /// Largeur de la zone « juste », en pourcentage de la subdivision. Un
     /// écart n'a pas la même portée musicale selon la finesse de la grille :
     /// 50 ms sur une noire lente passent inaperçus, sur une double-croche
@@ -117,7 +124,6 @@ final class Settings {
         clickEnabled = Self.bool(K.click, true)
         volume       = Self.double(K.volume, 0.5)
         subdivision  = Subdivision(rawValue: Self.int(K.subdiv, 1)) ?? .quarter
-        beatsPerBar  = Self.int(K.bar, 4)
         clickVoice   = ClickVoice(rawValue: Self.int(K.voice, 0)) ?? .claves
         syncStart    = Self.bool(K.syncStart, false)
         instrumentEnabled = Self.bool(K.instrOn, false)
@@ -125,6 +131,7 @@ final class Settings {
         accuracyVoicing   = AccuracyVoicing(rawValue: Self.int(K.accVoicing, 0)) ?? .none
 
         manualAlignmentMs = Self.double(K.align, 0)
+        syncAlignmentMs   = Self.double(K.syncAlign, 0)
         tolerancePercent  = Self.double(K.tolPct, 5)
         lastSourceID      = Int32(Self.int(K.source, 0))
         midiChannels      = Self.intSet(K.channels, [])
@@ -137,16 +144,15 @@ final class Settings {
     /// Durée d'un pas de grille, en secondes. (EX-032)
     var stepPeriod: Double { 60.0 / bpm / Double(subdivision.rawValue) }
 
-    /// Nombre de pas de grille dans une mesure. 0 si aucun accent. (EX-042)
-    var stepsPerBar: Int { beatsPerBar > 0 ? beatsPerBar * subdivision.rawValue : 0 }
 
     private enum K {
         static let bpm = "bpm", click = "click", volume = "volume"
-        static let subdiv = "subdiv", bar = "bar", voice = "voice"
+        static let subdiv = "subdiv", voice = "voice"
         static let syncStart = "syncStart"
         static let instrOn = "instrOn", instrVoice = "instrVoice"
         static let accVoicing = "accVoicing"
-        static let align = "align", tolPct = "tolPct", source = "source"
+        static let align = "align", syncAlign = "syncAlign"
+        static let tolPct = "tolPct", source = "source"
         static let channels = "channels", minVel = "minVel", chord = "chord"
         static let scaleZoom = "scaleZoom", statsWin = "statsWin"
     }

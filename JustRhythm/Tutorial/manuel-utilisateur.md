@@ -66,7 +66,7 @@ Un message peut apparaître juste au-dessus de la barre de transport — un aver
 Choisis ton clavier si plusieurs sont disponibles, vérifie la dernière note reçue, restreins l'écoute à certains canaux MIDI, et fixe une vélocité minimale en dessous de laquelle les notes sont ignorées (pratique pour filtrer les effleurements involontaires).
 
 ### Grille et son
-Choisis la subdivision sur laquelle tes notes sont jugées (noires, croches, triolets, doubles-croches), le nombre de temps par mesure recevant un accent, et le timbre du clic — cinq possibilités, chacune accompagnée d'une note sur le cas où elle convient (les claves ont l'attaque la plus nette et sont le meilleur choix pour l'étalonnage ; la grosse caisse se sent plus qu'elle ne s'entend et ne doit jamais servir à ça).
+Choisis la subdivision sur laquelle tes notes sont jugées (noires, croches, triolets, doubles-croches) et le timbre du clic — cinq possibilités, chacune accompagnée d'une note sur le cas où elle convient (les claves ont l'attaque la plus nette et sont le meilleur choix pour l'étalonnage ; la grosse caisse se sent plus qu'elle ne s'entend et ne doit jamais servir à ça).
 
 ### Synchronisation
 **Démarrage synchronisé** — si ton clavier possède une boîte à rythmes ou un séquenceur, ce réglage fait partir JustRhythm sur son message Start plutôt qu'après un délai fixe, puis suit son horloge MIDI pour que les deux ne dérivent jamais l'un par rapport à l'autre. Désactivé, tu démarres et arrêtes à la main comme d'habitude.
