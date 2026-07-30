@@ -65,6 +65,11 @@ final class MIDIManager {
     @ObservationIgnored private var destination: MIDIEndpointRef?
     @ObservationIgnored private var runningStatus: UInt8 = 0
 
+    /// 24 impulsions par noire, c'est la définition du MIDI Clock.
+    private static let clocksPerBeat = 24
+    /// Compteur d'impulsions, touché uniquement par le thread de réception.
+    @ObservationIgnored private var clockDivider = 0
+
     var selected: MIDISource? { sources.first { $0.id == selectedID } }
 
     // =====================================================================
@@ -141,6 +146,7 @@ final class MIDIManager {
         if MIDIPortConnectSource(port, endpoint, nil) == noErr {
             connected = endpoint
             runningStatus = 0
+            clockDivider = 0
             destination = Self.matchingDestination(for: endpoint)
         }
     }
@@ -211,6 +217,11 @@ final class MIDIManager {
 
     // =====================================================================
 
+    /// Lecture des paquets, sur le thread temps réel de CoreMIDI.
+    ///
+    /// Aucune allocation ici : la version précédente recopiait chaque paquet
+    /// dans un `Array` avant de l'analyser, soit une allocation par message sur
+    /// un thread qui n'en tolère pas. On analyse directement le tampon fourni.
     private func read(_ list: UnsafePointer<MIDIPacketList>) {
         for packet in list.unsafeSequence() {
             // L'horodatage vient du paquet, jamais de l'instant de traitement.
@@ -218,10 +229,11 @@ final class MIDIManager {
             let stamp = packet.pointee.timeStamp
             let time = stamp == 0 ? HostClock.now : HostClock.seconds(stamp)
             let length = Int(packet.pointee.length)
-            let bytes: [UInt8] = withUnsafeBytes(of: packet.pointee.data) { raw in
-                Array(raw.prefix(length))
+            withUnsafeBytes(of: packet.pointee.data) { raw in
+                guard let base = raw.baseAddress?.assumingMemoryBound(to: UInt8.self)
+                else { return }
+                parse(base, count: min(length, raw.count), at: time)
             }
-            parse(bytes, at: time)
         }
     }
 
@@ -232,9 +244,9 @@ final class MIDIManager {
     /// qui doit bien relâcher ce qu'il a fait sonner (EX-133). Ils ne passent
     /// jamais par `onNote` : rien de ce qui suit ne compte comme une note
     /// jouée. Aftertouch, pitch bend et messages système restent ignorés.
-    private func parse(_ bytes: [UInt8], at time: Double) {
+    private func parse(_ bytes: UnsafePointer<UInt8>, count: Int, at time: Double) {
         var i = 0
-        while i < bytes.count {
+        while i < count {
             var status = bytes[i]
 
             if status & 0x80 != 0 {
@@ -243,7 +255,18 @@ final class MIDIManager {
                 // Ils ne réinitialisent donc jamais le running status.
                 if status >= 0xF8 {
                     switch status {
-                    case 0xF8: onTransport?(time, .clock)
+                    case 0xF8:
+                        // Une impulsion d'horloge sur vingt-quatre seulement est
+                        // remontée. Les vingt-trois autres ne servaient qu'à
+                        // faire avancer un compteur, mais chacune traversait la
+                        // queue principale : trente-deux allers-retours par
+                        // seconde à 80 bpm, pour ne rien faire. Le compteur vit
+                        // désormais ici, sur le thread qui reçoit.
+                        clockDivider += 1
+                        if clockDivider >= Self.clocksPerBeat {
+                            clockDivider = 0
+                            onTransport?(time, .clock)
+                        }
                     case 0xFA: onTransport?(time, .start)
                     case 0xFB: onTransport?(time, .cont)
                     case 0xFC: onTransport?(time, .stop)
@@ -261,7 +284,7 @@ final class MIDIManager {
 
             let command = status & 0xF0
             let needed = (command == 0xC0 || command == 0xD0) ? 1 : 2
-            guard i + needed <= bytes.count else { return }
+            guard i + needed <= count else { return }
 
             let d1 = bytes[i]
             let d2 = needed == 2 ? bytes[i + 1] : 0

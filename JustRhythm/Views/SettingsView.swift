@@ -169,6 +169,16 @@ struct SettingsView: View {
             }
             .disabled(!s.instrumentEnabled)
 
+            // L'option de justesse appartient à ce qui produit le son : ici
+            // l'iPhone, dans la section « Retour clavier » l'instrument. C'est
+            // ce qui évite un troisième réglage et un croisement sortie × forme
+            // dont une case serait vide. (EX-134)
+            Picker("On accurate hits", selection: Binding(
+                get: { s.accuracyVoicing }, set: { s.accuracyVoicing = $0 })) {
+                ForEach(AccuracyVoicing.allCases) { Text($0.label).tag($0) }
+            }
+            .disabled(!s.instrumentEnabled)
+
             Button("Test the instrument") { engine.testInstrument() }
                 .disabled(!s.instrumentEnabled)
 
@@ -184,7 +194,10 @@ struct SettingsView: View {
         } header: {
             Text("Instrument")
         } footer: {
-            Text("The iPhone plays every note it receives, with the timbre chosen here — the metronome click and your notes then come out of the same speaker, by the same path. Intended for playing with Local Control off on the instrument: leave it on and you will hear each note twice.")
+            VStack(alignment: .leading, spacing: 8) {
+                Text("The iPhone plays every note it receives, with the timbre chosen here — the metronome click and your notes then come out of the same speaker, by the same path. Intended for playing with Local Control off on the instrument: leave it on and you will hear each note twice.")
+                Text("On accurate hits, the iPhone can add a note an octave up, or mute everything that misses the zone. This only applies while the metronome is running: stopped, there is no accuracy to judge and every note sounds. Keyboard feedback below is separate — turn both on and you will hear both.")
+            }
         }
     }
 

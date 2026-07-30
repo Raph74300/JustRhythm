@@ -132,6 +132,16 @@
         }
       }
     },
+    "Add an octave": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter l'octave"
+          }
+        }
+      }
+    },
     "Alignment": {
       "localizations": {
         "fr": {
@@ -596,6 +606,16 @@
         }
       }
     },
+    "Mute the others": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Étouffer les autres"
+          }
+        }
+      }
+    },
     "No accent": {
       "localizations": {
         "fr": {
@@ -646,12 +666,32 @@
         }
       }
     },
+    "Notes are being handled %d ms late — the app is not keeping up with the incoming stream. Their measured timing stays correct, but they may scroll off the graph before they are drawn.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les notes sont traitées avec %d ms de retard — l'application ne suit plus le flux entrant. Leur écart mesuré reste juste, mais elles peuvent sortir du graphe avant d'être dessinées."
+          }
+        }
+      }
+    },
     "Notes received within this window count as a single event, timestamped on the first one, and the app shows their spread. At 0, each note is counted separately. A wide window swallows fast repeated notes: lower it if you're working on rapid passages.": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
             "value": "Les notes reçues dans cette fenêtre comptent pour un seul événement, daté sur la première, et l'application affiche leur étalement. À 0, chaque note est comptée séparément. Une fenêtre large avale les notes répétées rapides : descends-la si tu travailles des traits."
+          }
+        }
+      }
+    },
+    "Nothing in particular": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rien de particulier"
           }
         }
       }
@@ -666,6 +706,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Note à l'octave"
+          }
+        }
+      }
+    },
+    "On accurate hits": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quand la frappe est juste"
+          }
+        }
+      }
+    },
+    "On accurate hits, the iPhone can add a note an octave up, or mute everything that misses the zone. This only applies while the metronome is running: stopped, there is no accuracy to judge and every note sounds. Keyboard feedback below is separate — turn both on and you will hear both.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quand la frappe est juste, l'iPhone peut ajouter une note à l'octave, ou étouffer tout ce qui manque la zone. Cela ne vaut que métronome en marche : à l'arrêt il n'y a pas de justesse à juger, et toutes les notes sonnent. Le retour clavier ci-dessous est indépendant — active les deux et tu entendras les deux."
           }
         }
       }
@@ -886,6 +946,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tester le son"
+          }
+        }
+      }
+    },
+    "The audio engine fell behind and some sound was dropped. Timing measurements are unaffected.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le moteur audio a décroché et du son a été abandonné. La mesure des écarts n'est pas affectée."
           }
         }
       }

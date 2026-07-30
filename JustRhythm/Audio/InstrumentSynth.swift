@@ -14,9 +14,14 @@ import Foundation
 /// dans un contexte où l'on ne peut ni poser un point d'arrêt ni journaliser.
 final class InstrumentSynth {
 
-    /// Au-delà, on vole la voix la plus ancienne. Dix doigts et une pédale
-    /// n'iront pas plus loin en pratique.
-    static let maxVoices = 24
+    /// Au-delà, on vole la voix la plus ancienne.
+    ///
+    /// Généreux à dessein : dix doigts ne tiennent que dix notes, mais un trait
+    /// parcouru pédale baissée en accumule des dizaines, et l'octave ajoutée par
+    /// EX-134 en double une partie. Mesuré à 0,6 % d'un cœur pour 24 voix
+    /// tenues : le calcul n'est pas ce qui limite ici, autant ne pas voler des
+    /// notes que le piano, lui, aurait laissées sonner.
+    static let maxVoices = 64
     private static let partials = InstrumentVoice.partialCount
 
     /// Table d'onde plutôt que `sin()` par échantillon : à 24 voix et 8
@@ -221,6 +226,13 @@ final class InstrumentSynth {
             releaseGain[v] = 1
             releaseCoef[v] = 1
         }
+    }
+
+    /// Nombre de voix occupées. Sonde de diagnostic, hors chemin audio.
+    var activeVoiceCount: Int {
+        var n = 0
+        for v in 0..<Self.maxVoices where noteOf[v] >= 0 { n += 1 }
+        return n
     }
 
     // =====================================================================

@@ -76,7 +76,16 @@ The iPhone can play the notes it receives itself, with a timbre you choose — p
 
 It is meant for playing with **Local Control off** on your instrument, which then acts as a silent controller: leave it on and you will hear every note twice. Every note sounds, accurate or not — this is not a reward but a voice. The sustain pedal is followed. **Test the instrument** plays a note without starting a session.
 
-The sounds are synthesised inside the app rather than sampled, so nothing is downloaded and nothing is stored. Expect a plausible instrument, not a concert grand — what you are listening for is where the attack falls.
+The sounds are synthesised inside the app rather than sampled, so nothing is downloaded and nothing is stored. Expect a plausible instrument, not a concert grand — what you are listening for is where the attack falls. The full range of an 88-key keyboard is covered, with 64-voice polyphony and the sustain pedal followed: a run with the pedal down cuts nothing.
+
+**On accurate hits**, the iPhone can do one thing more:
+- **Nothing in particular** — every note sounds alike. This is the default.
+- **Add an octave** — a note an octave up is layered over the hits that land in the zone. It stops with the key that triggered it.
+- **Mute the others** — only accurate hits sound; anything that misses the zone stays silent. The bluntest of the three, and the most demanding.
+
+This only applies **while the metronome is running**: stopped, there is no accuracy to judge and every note sounds — otherwise stopping the metronome would leave your keyboard silent.
+
+Not to be confused with **Keyboard feedback** below, which is independent: this one acts on the iPhone's own voice, the other sends a note to your instrument. Turn both on and you will hear both.
 
 Off by default.
 

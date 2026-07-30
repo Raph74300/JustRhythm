@@ -64,6 +64,36 @@ enum FeedbackMode: Int, CaseIterable, Identifiable {
     }
 }
 
+/// Ce que le module sonore fait différemment quand la frappe est juste. (EX-134)
+///
+/// Volontairement distinct de `FeedbackMode`, dont il a l'air proche : les deux
+/// ne parlent pas de la même chose. Côté clavier l'application ne contrôle
+/// rien — ce qu'on entend dépend du Local Control — et « même note » désigne ce
+/// qu'elle envoie. Côté iPhone elle *est* la voix : elle peut réellement
+/// étouffer une note, et « même note » n'y aurait aucun sens puisque jouer la
+/// note est précisément sa fonction. Un enum commun aurait rangé deux jeux de
+/// valeurs incompatibles sous un même nom — la manière la plus sûre de rendre
+/// les deux réglages confus.
+///
+/// `none` est l'état inactif : il n'y a donc pas d'interrupteur en plus, la
+/// section Instrument garde sa taille.
+enum AccuracyVoicing: Int, CaseIterable, Identifiable {
+    case none = 0, octave = 1, accurateOnly = 2
+    var id: Int { rawValue }
+
+    /// Des verbes, là où les modes du retour clavier sont des noms : l'iPhone
+    /// agit sur sa propre voix, le clavier reçoit ce qu'on lui envoie. La
+    /// différence grammaticale suffit à ne pas confondre « Ajouter l'octave »
+    /// et « Note à l'octave » d'un coup d'œil.
+    var label: String {
+        switch self {
+        case .none:         return String(localized: "Nothing in particular")
+        case .octave:       return String(localized: "Add an octave")
+        case .accurateOnly: return String(localized: "Mute the others")
+        }
+    }
+}
+
 /// Réglages persistants, restaurés au lancement. (EX-093)
 @Observable
 final class Settings {
@@ -90,6 +120,8 @@ final class Settings {
     /// Le téléphone sonorise lui-même les notes reçues. (EX-133)
     var instrumentEnabled: Bool { didSet { store.set(instrumentEnabled, forKey: K.instrOn) } }
     var instrumentVoice: InstrumentVoice { didSet { store.set(instrumentVoice.rawValue, forKey: K.instrVoice) } }
+    /// Ce que le module sonore change quand la frappe est juste. (EX-134)
+    var accuracyVoicing: AccuracyVoicing { didSet { store.set(accuracyVoicing.rawValue, forKey: K.accVoicing) } }
 
     // — Configuration : ce qu'on règle une fois, donc derrière l'engrenage —
     var manualAlignmentMs: Double { didSet { store.set(manualAlignmentMs, forKey: K.align) } }
@@ -143,6 +175,7 @@ final class Settings {
         feedbackMode    = FeedbackMode(rawValue: Self.int(K.feedbackMode, 0)) ?? .octave
         instrumentEnabled = Self.bool(K.instrOn, false)
         instrumentVoice   = InstrumentVoice(rawValue: Self.int(K.instrVoice, 0)) ?? .piano
+        accuracyVoicing   = AccuracyVoicing(rawValue: Self.int(K.accVoicing, 0)) ?? .none
 
         manualAlignmentMs = Self.double(K.align, 0)
         tolerancePercent  = Self.double(K.tolPct, 5)
@@ -166,6 +199,7 @@ final class Settings {
         static let syncStart = "syncStart"
         static let feedbackOn = "feedbackOn", feedbackMode = "feedbackMode"
         static let instrOn = "instrOn", instrVoice = "instrVoice"
+        static let accVoicing = "accVoicing"
         static let align = "align", tolPct = "tolPct", source = "source"
         static let channels = "channels", minVel = "minVel", chord = "chord"
         static let scaleZoom = "scaleZoom", statsWin = "statsWin"

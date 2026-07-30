@@ -91,14 +91,11 @@ final class RhythmEngine {
     private var timer: DispatchSourceTimer?
 
     // — Suivi de l'horloge MIDI (EX-054) —
-    /// 24 impulsions par noire, c'est la définition du MIDI Clock.
-    private static let clocksPerBeat = 24
     /// Au-delà de cet écart relatif, un intervalle n'est plus de la gigue mais
     /// un tempo qu'on vient de changer sur le clavier. Le seuil laisse passer
     /// largement la gigue du transport — de l'ordre du pour cent — et la perte
     /// d'une impulsion d'horloge, qui allonge un temps de 1/24, soit 4,2 %.
     private static let tempoJumpRatio = 0.08
-    private var clockCount = 0
     private var lastBeatTime: Double?
     private var smoothedBeat: Double?
     private let queue = DispatchQueue(label: "fr.justrhythm.scheduler", qos: .userInteractive)
@@ -112,10 +109,10 @@ final class RhythmEngine {
         midi.onNoteOff = { [weak self] note, channel in
             guard let self, self.listens(to: channel) else { return }
             DispatchQueue.main.async {
-                if self.settings.instrumentEnabled { self.metronome.instrumentNoteOff(note) }
-                // Le retour s'éteint avec la touche qui l'a déclenché, quel que
-                // soit l'état du réglage : une note lancée doit être relâchée
-                // même si l'on coupe le retour entre-temps. (EX-130 / EX-131)
+                // Sans condition sur les réglages, des deux côtés : une note
+                // lancée doit être relâchée même si l'on coupe entre l'appui et
+                // le lever. (EX-130 / EX-131 / EX-134)
+                self.releaseVoicedNote(note)
                 self.stopReward(note, channel: channel)
             }
         }
@@ -210,6 +207,23 @@ final class RhythmEngine {
     private var rewardNotes: [UInt16: (note: UInt8, token: UInt64)] = [:]
     private var rewardToken: UInt64 = 0
 
+    /// Une surcharge ne se signale qu'une fois par séance : la répéter
+    /// noierait le message utile sous sa propre répétition.
+    private var overloadReported = false
+
+    /// Au-delà de ce retard entre l'horodatage d'une note et son traitement,
+    /// la queue principale n'absorbe plus le flux. (EX-100)
+    ///
+    /// C'est la sonde qui manquait : une note traitée trop tard garde son
+    /// horodatage — la mesure reste juste — mais elle est dessinée à la place
+    /// que cet instant lui donne, déjà sortie par le bas du graphe. D'où le
+    /// symptôme « le clic continue, le graphe n'affiche plus rien, tout repart
+    /// après une pause » : un embouteillage, pas une fuite.
+    ///
+    /// Le seuil est large : la fenêtre visible la plus courte fait quelques
+    /// dixièmes de seconde, et un retard sous 250 ms ne se voit pas.
+    private static let lateThreshold = 0.250
+
     /// Nombre de notes derrière la lecture instantanée. Assez pour que la
     /// variabilité d'une frappe isolée se noie, assez peu pour qu'une
     /// correction du jeu se voie en une ou deux mesures.
@@ -253,6 +267,7 @@ final class RhythmEngine {
 
         hits.removeAll(); beats.removeAll(); deltas.removeAll()
         lastDelta = nil; stats = Stats(); openGroup = nil; notesPlayed = 0
+        overloadReported = false
 
         externallyTriggered = externalStart != nil
         gridLock.withLock {
@@ -284,7 +299,7 @@ final class RhythmEngine {
         guard running else { return }
         running = false
         externallyTriggered = false
-        clockCount = 0; lastBeatTime = nil; smoothedBeat = nil; clockBpm = nil
+        lastBeatTime = nil; smoothedBeat = nil; clockBpm = nil
         timer?.cancel(); timer = nil
         releaseAllRewards()
 
@@ -303,14 +318,19 @@ final class RhythmEngine {
     ///
     /// Appelée au premier besoin plutôt qu'au lancement : ouvrir la session
     /// audio coûte, et l'immense majorité des séances n'active pas le module.
-    /// Idempotente — `start()` et `loadInstrument` ressortent aussitôt si
-    /// l'état est déjà celui voulu.
+    ///
+    /// Elle est donc sur le chemin de **chaque note**, et doit y être quasi
+    /// gratuite : les deux appels qu'elle fait ressortent immédiatement quand
+    /// l'état est déjà le bon. Le cas courant se réduit à deux comparaisons.
     func prepareInstrument() {
+        guard settings.instrumentEnabled else { return }
+        if metronome.isRunning {
+            metronome.loadInstrument(settings.instrumentVoice)
+            return
+        }
         do {
-            if !metronome.isRunning {
-                try metronome.start()
-                outputLatency = metronome.outputLatency
-            }
+            try metronome.start()
+            outputLatency = metronome.outputLatency
             metronome.loadInstrument(settings.instrumentVoice)
         } catch {
             message = String(format: NSLocalizedString("Instrument unavailable: %@", comment: ""),
@@ -325,6 +345,7 @@ final class RhythmEngine {
             prepareInstrument()
         } else {
             metronome.instrumentSilence()
+            octaveCompanions.removeAll()
             if !running { metronome.stop() }
         }
     }
@@ -414,7 +435,7 @@ final class RhythmEngine {
 
         case .start, .cont:
             guard settings.syncStart, !running else { return }
-            clockCount = 0; lastBeatTime = nil; smoothedBeat = nil; clockBpm = nil
+            lastBeatTime = nil; smoothedBeat = nil; clockBpm = nil
             start(anchoredAt: time)
 
         case .stop:
@@ -435,9 +456,11 @@ final class RhythmEngine {
     /// décalage borné de l'ancrage. Les deux corrections restent petites tant
     /// que le clavier est stable, et la grille ne subit jamais de rupture.
     private func followClock(at time: Double) {
-        clockCount += 1
-        guard clockCount % Self.clocksPerBeat == 0 else { return }
-
+        // Plus de division ici : `MIDIManager` ne remonte qu'une impulsion sur
+        // vingt-quatre, sur son propre thread. Chaque appel est donc déjà une
+        // noire — ce qui a supprimé trente-deux traversées par seconde de la
+        // queue principale, dont vingt-trois sur vingt-quatre ne servaient qu'à
+        // incrémenter un compteur.
         defer { lastBeatTime = time }
         guard let previous = lastBeatTime else { return }
 
@@ -531,6 +554,15 @@ final class RhythmEngine {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
 
+            // L'écart est calculé d'entrée, avant toute sonorisation : c'est lui
+            // qui décide si l'iPhone ajoute une octave ou étouffe la note
+            // (EX-134). Le reporter obligerait à traiter séparément chacune des
+            // sorties anticipées qui suivent — seuil de vélocité, séance à
+            // l'arrêt, regroupement d'accord — et une seule oubliée rendrait
+            // des notes muettes.
+            let corrected = time + self.settings.manualAlignmentMs / 1000
+            let delta = corrected - self.nearestStep(corrected)
+
             // Le module sonore répond à toutes les frappes, y compris sous le
             // seuil de vélocité : celui-ci écarte du bruit de mesure (EX-018),
             // pas des notes qu'on vient bel et bien de jouer. Il passe donc
@@ -538,7 +570,8 @@ final class RhythmEngine {
             // arrêter le métronome rendrait le clavier muet. (EX-133)
             if self.settings.instrumentEnabled {
                 self.prepareInstrument()
-                self.metronome.instrumentNoteOn(note, velocity: velocity)
+                self.voiceNote(note, velocity: velocity,
+                               accurate: abs(delta) <= self.tolerance)
             }
 
             guard Int(velocity) >= self.settings.minVelocity else { return }         // (EX-018)
@@ -554,9 +587,6 @@ final class RhythmEngine {
                 self.hits[group.index].spread = time - group.start   // (EX-037)
                 return
             }
-
-            let corrected = time + self.settings.manualAlignmentMs / 1000
-            let delta = corrected - self.nearestStep(corrected)
 
             self.hits.append(Hit(time: corrected, delta: delta, notes: [note], spread: 0))
             if self.hits.count > 400 { self.hits.removeFirst(self.hits.count - 400) }
@@ -580,6 +610,55 @@ final class RhythmEngine {
 
             self.lastDelta = delta
             self.recomputeStats()
+            self.reportOverloadIfAny(lag: HostClock.now - time)
+        }
+    }
+
+    // =====================================================================
+    // Sonorisation par l'iPhone (EX-133 / EX-134)
+    // =====================================================================
+
+    /// Touches dont la frappe juste a fait ajouter une octave, pour savoir
+    /// laquelle relâcher au lever.
+    private var octaveCompanions: Set<UInt8> = []
+
+    private static func companion(of note: UInt8) -> UInt8 {
+        UInt8(min(127, Int(note) + 12))
+    }
+
+    private func voiceNote(_ note: UInt8, velocity: UInt8, accurate: Bool) {
+        // Sans grille en marche il n'y a pas de justesse à évaluer : tout sonne.
+        // Sinon « Étouffer les autres » rendrait le clavier entièrement muet dès
+        // qu'on arrête le métronome — l'alarme immédiate, pour un réglage qui
+        // n'a de sens que pendant une séance.
+        guard running else {
+            metronome.instrumentNoteOn(note, velocity: velocity)
+            return
+        }
+
+        switch settings.accuracyVoicing {
+        case .none:
+            metronome.instrumentNoteOn(note, velocity: velocity)
+
+        case .octave:
+            metronome.instrumentNoteOn(note, velocity: velocity)
+            guard accurate else { return }
+            octaveCompanions.insert(note)
+            metronome.instrumentNoteOn(Self.companion(of: note), velocity: velocity)
+
+        case .accurateOnly:
+            if accurate { metronome.instrumentNoteOn(note, velocity: velocity) }
+        }
+    }
+
+    /// Relâche la note et, le cas échéant, l'octave qui l'accompagnait.
+    ///
+    /// Sans condition sur le réglage : une note lancée doit être relâchée même
+    /// si l'on coupe le module entre l'appui et le lever.
+    private func releaseVoicedNote(_ note: UInt8) {
+        metronome.instrumentNoteOff(note)
+        if octaveCompanions.remove(note) != nil {
+            metronome.instrumentNoteOff(Self.companion(of: note))
         }
     }
 
@@ -633,6 +712,28 @@ final class RhythmEngine {
 
     private static func rewardKey(_ note: UInt8, _ channel: UInt8) -> UInt16 {
         UInt16(channel & 0x0F) << 8 | UInt16(note)
+    }
+
+    /// Signale une seule fois par séance que le rendu audio a décroché.
+    ///
+    /// Sans ce message, une surcharge ne se manifeste que par « l'application
+    /// sature au bout de quelques minutes » — un symptôme qui ne dit ni où ni
+    /// quand, et qu'on ne peut pas reproduire au simulateur puisqu'il n'y reçoit
+    /// aucune note. Le compteur, lui, désigne le sous-système fautif.
+    private func reportOverloadIfAny(lag: Double) {
+        guard !overloadReported else { return }
+
+        if lag > Self.lateThreshold {
+            overloadReported = true
+            message = String(format: NSLocalizedString(
+                "Notes are being handled %d ms late — the app is not keeping up with the incoming stream. Their measured timing stays correct, but they may scroll off the graph before they are drawn.",
+                comment: ""), Int(lag * 1000))
+            return
+        }
+        if metronome.overloadCount > 0 {
+            overloadReported = true
+            message = String(localized: "The audio engine fell behind and some sound was dropped. Timing measurements are unaffected.")
+        }
     }
 
     private func recomputeStats() {

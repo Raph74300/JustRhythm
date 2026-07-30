@@ -28,6 +28,9 @@ final class MetronomeEngine {
         var anchorFrame: Int64 = 0
         var pending: [Voice] = []
         var synthEvents: [SynthEvent] = []
+        /// Nombre de fois qu'un garde-fou a dû jeter du travail en retard.
+        /// Sert à transformer une panne silencieuse en symptôme lisible.
+        var overloads = 0
     }
 
     private let engine = AVAudioEngine()
@@ -48,6 +51,10 @@ final class MetronomeEngine {
     /// même chemin, donc avec la même latence. Rien à corriger entre les deux,
     /// contrairement à un retour renvoyé sur l'instrument.
     private let synth = InstrumentSynth()
+
+    /// Timbre déjà en service, pour ne pas le recharger à chaque note.
+    /// Écrit et lu depuis la queue principale uniquement.
+    private var loadedVoice: InstrumentVoice?
 
     /// Ce que le thread audio doit appliquer au synthé au prochain bloc.
     /// Les événements ne peuvent pas être joués depuis la queue principale :
@@ -79,6 +86,17 @@ final class MetronomeEngine {
 
     var isRunning: Bool { started }
 
+    /// Nombre de fois qu'un garde-fou a jeté du travail en retard depuis le
+    /// démarrage. Toute valeur non nulle signale que le rendu n'a pas suivi :
+    /// c'est exactement le genre de panne qui, sans compteur, ne se manifeste
+    /// que par « l'application a l'air de saturer ».
+    var overloadCount: Int {
+        os_unfair_lock_lock(lock)
+        let n = shared.overloads
+        os_unfair_lock_unlock(lock)
+        return n
+    }
+
     // =====================================================================
 
     func start() throws {
@@ -105,7 +123,15 @@ final class MetronomeEngine {
         observeInterruptions()
 
         synth.prepare(sampleRate: sampleRate)
+        loadedVoice = nil
         allocateScratch(4096)
+
+        // Capacité réservée d'avance : sans cela, le premier `append` qui
+        // dépasse le tampon le réalloue — donc alloue — en tenant le verrou que
+        // le thread audio réclame. C'est le même piège que `stage`, et il se
+        // referme d'autant plus que l'on joue vite.
+        shared.pending.reserveCapacity(64)
+        shared.synthEvents.reserveCapacity(256)
 
         let shared = self.shared
         let lock = self.lock
@@ -125,6 +151,17 @@ final class MetronomeEngine {
             if !shared.pending.isEmpty {
                 voices.append(contentsOf: shared.pending)
                 shared.pending.removeAll(keepingCapacity: true)
+            }
+            // Garde-fou sur les clics en vol. En régime normal il y en a deux ou
+            // trois : ils sont programmés 200 ms d'avance et retirés dès qu'ils
+            // sont joués. Mais un clic dont l'instant de départ tomberait loin
+            // dans l'avenir ne serait jamais retiré, et la boucle de mélange —
+            // en O(voix × échantillons) — ralentirait un peu plus à chaque
+            // seconde. Symptôme : une dégradation qui n'apparaît qu'au bout de
+            // plusieurs minutes, jamais lors d'un essai court.
+            if voices.count > 32 {
+                voices.removeFirst(voices.count - 32)
+                shared.overloads += 1
             }
             // Les événements du synthé s'appliquent ici, et nulle part ailleurs :
             // l'état des voix appartient au rendu.
@@ -251,9 +288,22 @@ final class MetronomeEngine {
 
     /// Met un timbre en service. La recette est lue ici, sur la queue
     /// principale ; le rendu se contente ensuite de l'adopter.
+    ///
+    /// Deux précautions, et ce ne sont pas des raffinements. **Sortie immédiate
+    /// si le timbre ne change pas** : cette méthode est sur le chemin de chaque
+    /// note, et sans ce garde-fou elle refaisait tout le travail à chaque
+    /// frappe. **`stage` hors du verrou** : il construit trois tableaux, donc il
+    /// alloue, et allouer en tenant un verrou que le thread audio réclame
+    /// toutes les dix millisecondes est une inversion de priorité — le rendu
+    /// attend le malloc de la queue principale et manque son échéance. L'ordre
+    /// reste correct : la préparation est achevée avant que l'événement qui la
+    /// signale ne devienne visible.
     func loadInstrument(_ voice: InstrumentVoice) {
-        os_unfair_lock_lock(lock)
+        guard loadedVoice != voice else { return }
+        loadedVoice = voice
+
         synth.stage(voice)
+        os_unfair_lock_lock(lock)
         shared.synthEvents.append(.timbre)
         os_unfair_lock_unlock(lock)
     }
@@ -290,6 +340,16 @@ final class MetronomeEngine {
     private func post(_ event: SynthEvent) {
         guard started else { return }
         os_unfair_lock_lock(lock)
+        // Une file qui gonfle signifie que le rendu ne la vide plus — moteur
+        // suspendu, surcharge, interruption. La laisser croître ferait grossir
+        // la mémoire sans fin et rejouerait, au retour, des minutes d'événements
+        // périmés d'un coup. On repart donc de zéro, en éteignant ce qui sonne
+        // pour ne pas laisser de note accrochée.
+        if shared.synthEvents.count > 512 {
+            shared.synthEvents.removeAll(keepingCapacity: true)
+            shared.synthEvents.append(.silence)
+            shared.overloads += 1
+        }
         shared.synthEvents.append(event)
         os_unfair_lock_unlock(lock)
     }

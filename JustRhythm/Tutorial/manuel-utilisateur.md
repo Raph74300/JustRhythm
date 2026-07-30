@@ -78,7 +78,16 @@ L'iPhone peut sonoriser lui-même les notes qu'il reçoit, avec un timbre que tu
 
 C'est prévu pour jouer **Local Control coupé** sur l'instrument, qui devient alors un clavier muet : en le laissant activé, tu entendras chaque note deux fois. Toutes les notes sonnent, justes ou non — ce n'est pas une récompense mais une voix. La pédale forte est suivie. **Tester l'instrument** joue une note sans lancer de séance.
 
-Les sons sont synthétisés dans l'application plutôt qu'échantillonnés : rien n'est téléchargé, rien n'est stocké. Attends-toi à un instrument plausible, pas à un piano de concert — ce que tu écoutes, c'est où tombe l'attaque.
+Les sons sont synthétisés dans l'application plutôt qu'échantillonnés : rien n'est téléchargé, rien n'est stocké. Attends-toi à un instrument plausible, pas à un piano de concert — ce que tu écoutes, c'est où tombe l'attaque. Toute la tessiture d'un 88 touches est couverte, avec 64 voix de polyphonie et la pédale suivie : un trait pédale baissée ne coupe rien.
+
+**Quand la frappe est juste**, l'iPhone peut faire une chose de plus :
+- **Rien de particulier** — toutes les notes sonnent pareil. C'est le réglage par défaut.
+- **Ajouter l'octave** — une note à l'octave se superpose à celles qui tombent dans la zone. Elle s'éteint avec la touche qui l'a déclenchée.
+- **Étouffer les autres** — seules les frappes justes sonnent ; celles qui manquent la zone restent silencieuses. Le retour le plus franc des trois, et le plus exigeant.
+
+Cela ne vaut que **métronome en marche** : à l'arrêt il n'y a pas de justesse à juger, et toutes les notes sonnent — sinon couper le métronome rendrait ton clavier muet.
+
+À ne pas confondre avec le **Retour clavier** ci-dessous, qui est indépendant : celui-ci agit sur la voix de l'iPhone, l'autre envoie une note à ton instrument. Active les deux et tu entendras les deux.
 
 Désactivé par défaut.
 
