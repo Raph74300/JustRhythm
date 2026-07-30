@@ -71,12 +71,24 @@ Choose the subdivision your notes are judged against (quarter notes, eighth note
 
 While the clock is driving, the tempo shown reads **bpm received** and the app adopts it as its own: the "right" zone and the graph scale follow it, and the app's tempo controls are greyed out — setting them by hand would be pointless, since the next beat would overwrite your value. Change the tempo on the keyboard and the app follows within a beat. The received tempo is kept when you stop, so the next manual session starts from the tempo you were actually playing at rather than from a stale setting.
 
-### Reward
-An optional sound plays back on your instrument when a note lands in the "right" zone — a small, immediate confirmation you're on time. Two modes:
-- **Note doubled an octave up** — an extra note, an octave above what you played, sounds alongside it. Keep **Local Control on** on your instrument so your own notes keep sounding normally; this one is just a bonus layered on top.
-- **Note muted if inaccurate** — the opposite approach: your note is echoed back at its own pitch only when it's accurate, and stays silent otherwise. This requires **Local Control off** on your instrument (so it doesn't already sound on its own) — otherwise every note plays anyway and you won't notice a difference.
+### Instrument
+The iPhone can play the notes it receives itself, with a timbre you choose — piano, electric piano, harpsichord, acoustic guitar or marimba. Your notes and the metronome click then come out of the same speaker, by the same path, so nothing has to be corrected between them.
 
-Off by default; both modes need your instrument to accept incoming MIDI notes, not just send them.
+It is meant for playing with **Local Control off** on your instrument, which then acts as a silent controller: leave it on and you will hear every note twice. Every note sounds, accurate or not — this is not a reward but a voice. The sustain pedal is followed. **Test the instrument** plays a note without starting a session.
+
+The sounds are synthesised inside the app rather than sampled, so nothing is downloaded and nothing is stored. Expect a plausible instrument, not a concert grand — what you are listening for is where the attack falls.
+
+Off by default.
+
+### Keyboard feedback
+An optional note is sent back to your instrument when a hit lands in the "right" zone. The point is immediate confirmation: an accurate hit is heard as it happens, in the time of playing rather than the time of analysis.
+
+The note starts when you press and stops when you release, so it lasts exactly as long as your gesture — whatever the tempo, the subdivision, or how the passage is written. Two modes:
+
+- **Octave note** — a note an octave above the one you played is sent back. Keep **Local Control on** so your own notes keep sounding alongside it.
+- **Same note** — the note you played is sent back at the same pitch, but only when the hit is accurate. Turn **Local Control off** to make the instrument stay silent on inaccurate hits; leave it on and it already sounds on its own, so accurate hits are merely reinforced.
+
+Off by default. Both modes need your instrument to accept incoming MIDI notes, not just send them. Nothing survives its trigger: notes are released when you stop, when you switch the setting off, and if the keyboard disappears.
 
 ### Chords
 Notes played within a short window (default 30 ms) count as one event, timestamped on the first note, with their spread shown alongside it — so playing a chord doesn't look like several separate timing errors. Set the window to 0 to count every note individually; lower it if you're working on fast repeated single notes rather than chords.

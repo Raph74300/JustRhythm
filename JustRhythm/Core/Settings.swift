@@ -23,15 +23,43 @@ enum Subdivision: Int, CaseIterable, Identifiable {
     }
 }
 
-/// Ce que renvoie l'app sur l'instrument quand une frappe tombe dans la
-/// zone « juste ».
+/// Ce que l'application renvoie au clavier quand une frappe tombe dans la
+/// zone « juste ». (EX-130 / EX-131)
+///
+/// Les libellés décrivent ce que l'application **émet**, jamais ce qu'on
+/// entendra : cela dépend du Local Control, réglé sur l'instrument et hors de
+/// notre portée. L'ancien « Note muette si imprécise » était faux dans la
+/// configuration d'usine — Local Control activé, rien n'est muet, et ce sont
+/// au contraire les frappes justes qui s'entendent renforcées. La consigne du
+/// pied de page dit, elle, ce qu'il faut configurer pour obtenir l'effet voulu.
 enum FeedbackMode: Int, CaseIterable, Identifiable {
     case octave = 0, mute = 1
     var id: Int { rawValue }
+
+    /// Ce que la fonction cherche à obtenir, commun aux deux modes.
+    ///
+    /// Le seul endroit où l'intention a sa place : l'en-tête dit où va le son,
+    /// l'interrupteur à quelle condition, le mode lequel — aucun des trois n'a
+    /// à porter le pourquoi. Il s'arrête à ce qui se constate : le retour tombe
+    /// dans le temps du jeu. Qu'il fasse progresser plus vite est plausible,
+    /// n'est pas mesuré, et ne sera donc pas affirmé. (EX-097)
+    static let purpose = String(localized: "The point is immediate confirmation: an accurate hit is heard as it happens, in the time of playing rather than the time of analysis — which no number read afterwards can replace.")
+
+    /// Court : l'en-tête et l'interrupteur ont déjà posé « au clavier » et
+    /// « quand la frappe est juste ». Les répéter ici ne dirait rien de plus.
     var label: String {
         switch self {
-        case .octave: return String(localized: "Note doubled an octave up")
-        case .mute:   return String(localized: "Note muted if inaccurate")
+        case .octave: return String(localized: "Octave note")
+        case .mute:   return String(localized: "Same note")
+        }
+    }
+
+    var hint: String {
+        switch self {
+        case .octave:
+            return String(localized: "A note an octave above the one you played is sent back when the hit lands in the “right” zone. Leave Local Control on, so you keep hearing your own notes alongside it.")
+        case .mute:
+            return String(localized: "The note you played is sent back at the same pitch, but only when the hit is accurate. Turn Local Control off to make the instrument stay silent on inaccurate hits — otherwise it already sounds on its own, and accurate hits are merely reinforced.")
         }
     }
 }
@@ -59,6 +87,9 @@ final class Settings {
     /// Un retour sonore signale la justesse de la frappe sur l'instrument.
     var feedbackEnabled: Bool { didSet { store.set(feedbackEnabled, forKey: K.feedbackOn) } }
     var feedbackMode: FeedbackMode { didSet { store.set(feedbackMode.rawValue, forKey: K.feedbackMode) } }
+    /// Le téléphone sonorise lui-même les notes reçues. (EX-133)
+    var instrumentEnabled: Bool { didSet { store.set(instrumentEnabled, forKey: K.instrOn) } }
+    var instrumentVoice: InstrumentVoice { didSet { store.set(instrumentVoice.rawValue, forKey: K.instrVoice) } }
 
     // — Configuration : ce qu'on règle une fois, donc derrière l'engrenage —
     var manualAlignmentMs: Double { didSet { store.set(manualAlignmentMs, forKey: K.align) } }
@@ -110,6 +141,8 @@ final class Settings {
         syncStart    = Self.bool(K.syncStart, false)
         feedbackEnabled = Self.bool(K.feedbackOn, false)
         feedbackMode    = FeedbackMode(rawValue: Self.int(K.feedbackMode, 0)) ?? .octave
+        instrumentEnabled = Self.bool(K.instrOn, false)
+        instrumentVoice   = InstrumentVoice(rawValue: Self.int(K.instrVoice, 0)) ?? .piano
 
         manualAlignmentMs = Self.double(K.align, 0)
         tolerancePercent  = Self.double(K.tolPct, 5)
@@ -132,6 +165,7 @@ final class Settings {
         static let subdiv = "subdiv", bar = "bar", voice = "voice"
         static let syncStart = "syncStart"
         static let feedbackOn = "feedbackOn", feedbackMode = "feedbackMode"
+        static let instrOn = "instrOn", instrVoice = "instrVoice"
         static let align = "align", tolPct = "tolPct", source = "source"
         static let channels = "channels", minVel = "minVel", chord = "chord"
         static let scaleZoom = "scaleZoom", statsWin = "statsWin"

@@ -73,12 +73,24 @@ Choisis la subdivision sur laquelle tes notes sont jugées (noires, croches, tri
 
 Tant que l'horloge pilote, le tempo affiché indique **bpm reçu** et l'application l'adopte comme le sien : la zone « juste » et l'échelle du graphe le suivent, et les commandes de tempo se grisent — les régler à la main n'aurait aucun effet, le temps suivant écraserait ta valeur. Change le tempo sur le clavier et l'application suit en un temps. Le tempo reçu est conservé à l'arrêt, si bien que la séance manuelle suivante démarre sur le tempo réellement joué plutôt que sur un réglage périmé.
 
-### Récompense
-Un retour sonore facultatif se déclenche sur ton instrument quand une note tombe dans la zone « juste » — une confirmation immédiate et discrète. Deux modes :
-- **Note doublée à l'octave** — une note supplémentaire, une octave au-dessus, sonne en même temps que la tienne. Laisse le **Local Control activé** sur l'instrument pour continuer à entendre normalement ton propre jeu : celle-ci n'est qu'un bonus par-dessus.
-- **Note muette si imprécise** — la démarche inverse : ta note ne t'est renvoyée, à sa propre hauteur, que lorsqu'elle est juste, et reste silencieuse sinon. Cela suppose de **couper le Local Control** sur l'instrument, sans quoi il joue déjà tout seul et tu ne verras aucune différence.
+### Instrument
+L'iPhone peut sonoriser lui-même les notes qu'il reçoit, avec un timbre que tu choisis — piano, piano électrique, clavecin, guitare acoustique ou marimba. Tes notes et le clic du métronome sortent alors du même haut-parleur, par le même chemin, si bien qu'il n'y a plus rien à corriger entre les deux.
 
-Désactivé par défaut. Les deux modes exigent que ton instrument accepte les notes MIDI entrantes, et pas seulement qu'il en émette.
+C'est prévu pour jouer **Local Control coupé** sur l'instrument, qui devient alors un clavier muet : en le laissant activé, tu entendras chaque note deux fois. Toutes les notes sonnent, justes ou non — ce n'est pas une récompense mais une voix. La pédale forte est suivie. **Tester l'instrument** joue une note sans lancer de séance.
+
+Les sons sont synthétisés dans l'application plutôt qu'échantillonnés : rien n'est téléchargé, rien n'est stocké. Attends-toi à un instrument plausible, pas à un piano de concert — ce que tu écoutes, c'est où tombe l'attaque.
+
+Désactivé par défaut.
+
+### Retour clavier
+Une note facultative est renvoyée à ton instrument quand la frappe tombe dans la zone « juste ». Le principe est celui d'une confirmation immédiate : la frappe juste s'entend au moment où elle se produit, dans le temps du jeu et non dans celui de l'analyse.
+
+La note part à l'appui et s'éteint au lever, si bien qu'elle dure exactement ce que dure ton geste — quels que soient le tempo, la subdivision ou l'écriture du passage. Deux modes :
+
+- **Note à l'octave** — une note située une octave au-dessus de celle que tu joues est renvoyée. Laisse le **Local Control activé** pour continuer à entendre tes propres notes à côté.
+- **Même note** — ta note t'est renvoyée à la même hauteur, mais seulement si la frappe est juste. Coupe le **Local Control** pour que l'instrument reste silencieux quand tu es imprécis ; en le laissant activé, il sonne déjà tout seul et les frappes justes s'entendent simplement renforcées.
+
+Désactivé par défaut. Les deux modes exigent que ton instrument accepte les notes MIDI entrantes, et pas seulement qu'il en émette. Rien ne survit à son déclencheur : les notes sont relâchées à l'arrêt, à la coupure du réglage, et si le clavier disparaît.
 
 ### Accords
 Les notes jouées dans une courte fenêtre (30 ms par défaut) comptent pour un seul événement, daté sur la première, avec leur étalement affiché à côté — ainsi un accord ne ressemble pas à une série d'erreurs de placement distinctes. Règle la fenêtre à 0 pour compter chaque note séparément ; baisse-la si tu travailles des notes répétées rapides plutôt que des accords.

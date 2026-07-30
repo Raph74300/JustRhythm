@@ -26,6 +26,7 @@ struct SettingsView: View {
                 keyboardSection
                 gridSection
                 syncSection
+                instrumentSection
                 feedbackSection
                 chordSection
                 alignmentSection
@@ -153,11 +154,52 @@ struct SettingsView: View {
         }
     }
 
-    /// Retour sonore sur l'instrument quand la frappe est juste.
+    /// Le téléphone sonorise les notes reçues. Rien à voir avec la récompense
+    /// ci-dessous : ici tout ce qui est joué sonne, juste ou non. (EX-133)
+    private var instrumentSection: some View {
+        Section {
+            Toggle("Play notes on the iPhone", isOn: Binding(
+                get: { s.instrumentEnabled },
+                set: { s.instrumentEnabled = $0; engine.instrumentSettingChanged() }))
+
+            Picker("Sound", selection: Binding(
+                get: { s.instrumentVoice },
+                set: { s.instrumentVoice = $0; engine.instrumentSettingChanged() })) {
+                ForEach(InstrumentVoice.allCases) { Text($0.label).tag($0) }
+            }
+            .disabled(!s.instrumentEnabled)
+
+            Button("Test the instrument") { engine.testInstrument() }
+                .disabled(!s.instrumentEnabled)
+
+            // Un échec ici repose l'interrupteur : sans ce rappel, il paraît
+            // simplement refuser de s'activer, et l'explication reste sur
+            // l'écran de mesure, derrière cette feuille — invisible au moment
+            // précis où elle servirait.
+            if let message = engine.message {
+                Label(message, systemImage: "exclamationmark.triangle")
+                    .foregroundStyle(.secondary)
+                    .font(.footnote)
+            }
+        } header: {
+            Text("Instrument")
+        } footer: {
+            Text("The iPhone plays every note it receives, with the timbre chosen here — the metronome click and your notes then come out of the same speaker, by the same path. Intended for playing with Local Control off on the instrument: leave it on and you will hear each note twice.")
+        }
+    }
+
+    /// Une note renvoyée au clavier quand la frappe est juste. (EX-130 / EX-131)
+    ///
+    /// Chaque niveau ajoute une information et aucun ne répète le précédent :
+    /// l'en-tête dit **où** part le son, l'interrupteur **à quelle condition**,
+    /// le mode **lequel**. C'est ce qui permet aux libellés de mode de rester
+    /// courts sans rien perdre — le sélecteur replié est lu dans le contexte
+    /// que les deux lignes du dessus viennent de poser.
     private var feedbackSection: some View {
         Section {
-            Toggle("Sound reward", isOn: Binding(
-                get: { s.feedbackEnabled }, set: { s.feedbackEnabled = $0 }))
+            Toggle("Send a note back on accurate hits", isOn: Binding(
+                get: { s.feedbackEnabled },
+                set: { s.feedbackEnabled = $0; engine.feedbackSettingChanged() }))
 
             Picker("Mode", selection: Binding(
                 get: { s.feedbackMode }, set: { s.feedbackMode = $0 })) {
@@ -165,9 +207,15 @@ struct SettingsView: View {
             }
             .disabled(!s.feedbackEnabled)
         } header: {
-            Text("Reward")
+            Text("Keyboard feedback")
         } footer: {
-            Text("In octave mode, a note is added an octave higher when the hit lands in the “right” zone — remember to leave Local Control on so you keep hearing your own notes. In mute mode, the instrument stays silent until the hit is accurate; that requires turning Local Control off, otherwise it's already sounding on its own.")
+            // L'intention d'abord, commune aux deux modes, puis la consigne
+            // propre à celui qui est choisi : celles du Local Control diffèrent
+            // d'un mode à l'autre et se contrediraient dans un pavé unique.
+            VStack(alignment: .leading, spacing: 8) {
+                Text(FeedbackMode.purpose)
+                Text(s.feedbackMode.hint)
+            }
         }
     }
 

@@ -42,7 +42,7 @@ You immediately see:
 - how many milliseconds you're off
 - your consistency over time
 
-An exclusive feature strengthens audio feedback too: when your playing is perfectly in time, an additional note is played automatically an octave higher to indicate you're perfectly locked in.
+Audio feedback goes further too. When a hit lands in time, the app can send a note back to your instrument — an octave above what you played, or the same pitch — held for exactly as long as you hold the key, so the confirmation arrives in the time of playing rather than after it. And if you prefer, the iPhone can voice your notes itself, with a piano, electric piano, harpsichord, acoustic guitar or marimba sound: your playing and the metronome then come out of the same speaker, with nothing to correct between them.
 
 After a few weeks of training, your playing naturally becomes more precise, more stable, and more in the groove. You'll play more easily with a drummer or other musicians, and your music will gain cohesion, energy, and impact.
 

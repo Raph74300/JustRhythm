@@ -27,6 +27,7 @@ final class MetronomeEngine {
         var anchorHost: Double = 0
         var anchorFrame: Int64 = 0
         var pending: [Voice] = []
+        var synthEvents: [SynthEvent] = []
     }
 
     private let engine = AVAudioEngine()
@@ -40,6 +41,29 @@ final class MetronomeEngine {
     private var source: AVAudioSourceNode?
     private var sampleRate: Double = 48_000
     private var started = false
+
+    // — Module sonore (EX-133) —
+    /// Rendu par *le même* callback que le clic, et c'est tout l'intérêt : les
+    /// notes et le métronome sortent par le même haut-parleur, au terme du
+    /// même chemin, donc avec la même latence. Rien à corriger entre les deux,
+    /// contrairement à un retour renvoyé sur l'instrument.
+    private let synth = InstrumentSynth()
+
+    /// Ce que le thread audio doit appliquer au synthé au prochain bloc.
+    /// Les événements ne peuvent pas être joués depuis la queue principale :
+    /// l'état des voix appartient au rendu, et rien ne doit s'y écrire pendant
+    /// qu'il le lit.
+    private enum SynthEvent {
+        case noteOn(UInt8, UInt8)
+        case noteOff(UInt8)
+        case sustain(Bool)
+        case timbre
+        case silence
+    }
+
+    /// Tampon mono du synthé, alloué une fois : le rendu ne doit rien allouer.
+    private var scratch: UnsafeMutablePointer<Double>?
+    private var scratchCapacity = 0
 
     /// Les cinq timbres dans leurs deux variantes, synthétisés une fois au
     /// démarrage. Une cinquantaine de kilo-octets : autant tout précalculer.
@@ -80,11 +104,15 @@ final class MetronomeEngine {
         }
         observeInterruptions()
 
+        synth.prepare(sampleRate: sampleRate)
+        allocateScratch(4096)
+
         let shared = self.shared
         let lock = self.lock
+        let synth = self.synth
         var voices: [Voice] = []      // exclusif au thread audio
 
-        let node = AVAudioSourceNode(format: format) { isSilence, timestamp, frameCount, ablPointer in
+        let node = AVAudioSourceNode(format: format) { [weak self] isSilence, timestamp, frameCount, ablPointer in
             let frames = Int(frameCount)
             let buffers = UnsafeMutableAudioBufferListPointer(ablPointer)
 
@@ -98,6 +126,18 @@ final class MetronomeEngine {
                 voices.append(contentsOf: shared.pending)
                 shared.pending.removeAll(keepingCapacity: true)
             }
+            // Les événements du synthé s'appliquent ici, et nulle part ailleurs :
+            // l'état des voix appartient au rendu.
+            for event in shared.synthEvents {
+                switch event {
+                case .noteOn(let note, let velocity): synth.noteOn(note, velocity: velocity)
+                case .noteOff(let note):              synth.noteOff(note)
+                case .sustain(let down):              synth.sustain(down)
+                case .timbre:                         synth.adoptStagedTimbre()
+                case .silence:                        synth.silence()
+                }
+            }
+            shared.synthEvents.removeAll(keepingCapacity: true)
             let base = shared.frames
             shared.frames += Int64(frames)
             os_unfair_lock_unlock(lock)
@@ -105,7 +145,22 @@ final class MetronomeEngine {
             for buffer in buffers {
                 memset(buffer.mData, 0, Int(buffer.mDataByteSize))
             }
-            if voices.isEmpty {
+
+            var sounded = false
+            if let scratch = self?.scratch, frames <= self?.scratchCapacity ?? 0 {
+                scratch.update(repeating: 0, count: frames)
+                sounded = synth.render(into: scratch, frames: frames)
+                if sounded {
+                    for buffer in buffers {
+                        guard let out = buffer.mData?.assumingMemoryBound(to: Float.self) else { continue }
+                        for frame in 0..<frames {
+                            out[frame] += Float(Self.softClip(scratch[frame]))
+                        }
+                    }
+                }
+            }
+
+            if voices.isEmpty && !sounded {
                 isSilence.pointee = true
                 return noErr
             }
@@ -131,6 +186,7 @@ final class MetronomeEngine {
 
         engine.attach(node)
         engine.connect(node, to: engine.mainMixerNode, format: format)
+
         engine.prepare()
         try engine.start()
 
@@ -151,8 +207,10 @@ final class MetronomeEngine {
             engine.detach(node)
             source = nil
         }
+        synth.silence()
         os_unfair_lock_lock(lock)
         shared.pending.removeAll()
+        shared.synthEvents.removeAll()
         shared.anchorHost = 0
         os_unfair_lock_unlock(lock)
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
@@ -185,6 +243,76 @@ final class MetronomeEngine {
     /// Clic isolé, pour vérifier la chaîne audio sans lancer de séance. (EX-052)
     func playTestClick(voice: ClickVoice, volume: Float) {
         schedule(at: HostClock.now + 0.08, voice: voice, accent: true, volume: volume)
+    }
+
+    // =====================================================================
+    // Module sonore (EX-133)
+    // =====================================================================
+
+    /// Met un timbre en service. La recette est lue ici, sur la queue
+    /// principale ; le rendu se contente ensuite de l'adopter.
+    func loadInstrument(_ voice: InstrumentVoice) {
+        os_unfair_lock_lock(lock)
+        synth.stage(voice)
+        shared.synthEvents.append(.timbre)
+        os_unfair_lock_unlock(lock)
+    }
+
+    func instrumentNoteOn(_ note: UInt8, velocity: UInt8) { post(.noteOn(note, velocity)) }
+    func instrumentNoteOff(_ note: UInt8)                 { post(.noteOff(note)) }
+
+    /// Pédale forte. Ignorée par la mesure, qui ne compte que des frappes
+    /// (EX-016), mais indispensable dès que le téléphone tient le son : sans
+    /// elle, il n'y a tout simplement pas de jeu lié au piano.
+    func instrumentSustain(_ down: Bool) { post(.sustain(down)) }
+
+    /// Coupe tout ce qui sonne encore. Sans cela, une note tenue au moment où
+    /// l'on coupe le module resterait accrochée jusqu'à l'arrêt du moteur.
+    func instrumentSilence() { post(.silence) }
+
+    /// Saturation douce du bus du synthé.
+    ///
+    /// Une note isolée culmine vers 0,5, mais dix notes tenues à la pédale se
+    /// somment jusqu'à 2,3 quand leurs attaques coïncident. Il faut donc
+    /// comprimer, et la cubique classique `x - x³/3` **ne suffit pas seule** :
+    /// elle n'est monotone que sur [-1, 1]. Au-delà elle se retourne et
+    /// replie l'onde, ce qui s'entend bien plus mal qu'un écrêtage franc, puis
+    /// diverge carrément. Le rabattement préalable dans [-1, 1] n'est donc pas
+    /// une précaution mais la condition de validité de la formule.
+    ///
+    /// Le facteur 1,5 ramène la sortie de la cubique — bornée à 2/3 — à
+    /// l'unité, et le niveau final laisse la place au clic dans le mélange.
+    private static func softClip(_ sample: Double) -> Double {
+        let x = max(-1, min(1, sample * 0.6))
+        return (x - x * x * x / 3) * 1.5 * 0.5
+    }
+
+    private func post(_ event: SynthEvent) {
+        guard started else { return }
+        os_unfair_lock_lock(lock)
+        shared.synthEvents.append(event)
+        os_unfair_lock_unlock(lock)
+    }
+
+    private func allocateScratch(_ capacity: Int) {
+        scratch?.deallocate()
+        let p = UnsafeMutablePointer<Double>.allocate(capacity: capacity)
+        p.initialize(repeating: 0, count: capacity)
+        scratch = p
+        scratchCapacity = capacity
+    }
+
+    /// Oublie les clics déjà programmés sans arrêter le moteur.
+    ///
+    /// À l'arrêt d'une séance, le moteur doit rester en marche tant que le
+    /// module sonore est actif (EX-133) : sinon, couper le métronome rendrait
+    /// le clavier muet chez qui joue Local Control désactivé. On se contente
+    /// donc de vider la file, faute de quoi les clics déjà programmés dans les
+    /// 200 ms à venir sonneraient après l'arrêt.
+    func flushPending() {
+        os_unfair_lock_lock(lock)
+        shared.pending.removeAll(keepingCapacity: true)
+        os_unfair_lock_unlock(lock)
     }
 
     // =====================================================================

@@ -107,9 +107,29 @@ final class RhythmEngine {
         midi.onNote = { [weak self] time, note, velocity, channel in
             self?.handle(time: time, note: note, velocity: velocity, channel: channel)
         }
+        // Relâchement et pédale ne concernent que le module sonore : ils ne
+        // touchent ni les statistiques ni le graphe. (EX-133)
+        midi.onNoteOff = { [weak self] note, channel in
+            guard let self, self.listens(to: channel) else { return }
+            DispatchQueue.main.async {
+                if self.settings.instrumentEnabled { self.metronome.instrumentNoteOff(note) }
+                // Le retour s'éteint avec la touche qui l'a déclenché, quel que
+                // soit l'état du réglage : une note lancée doit être relâchée
+                // même si l'on coupe le retour entre-temps. (EX-130 / EX-131)
+                self.stopReward(note, channel: channel)
+            }
+        }
+        midi.onController = { [weak self] controller, value, channel in
+            guard let self, controller == 64, self.listens(to: channel) else { return }
+            DispatchQueue.main.async {
+                guard self.settings.instrumentEnabled else { return }
+                self.metronome.instrumentSustain(value >= 64)
+            }
+        }
         midi.onSourceLost = { [weak self] _ in
             guard let self else { return }
             self.stop()
+            self.releaseAllRewards()
             self.resetStats()
             self.beats.removeAll()
             self.message = nil
@@ -147,6 +167,30 @@ final class RhythmEngine {
     var tolerance: Double {
         Tolerance.limit(percent: settings.tolerancePercent, step: gridPeriod)
     }
+
+    /// Au-delà, une note de retour est relâchée d'office. (EX-130 / EX-131)
+    ///
+    /// Le retour suit désormais le lever de touche, ce qui suppose de recevoir
+    /// le Note Off correspondant. S'il se perd — message manqué, clavier
+    /// débranché, canal écouté modifié en cours de séance — la note resterait
+    /// accrochée indéfiniment. La durée fixe qu'on avait avant garantissait au
+    /// moins l'extinction ; ce filet lui rend ce seul mérite, sans revenir à
+    /// son défaut. Large exprès : il ne doit jamais tomber sur une note
+    /// réellement tenue, seulement sur une note oubliée.
+    private static let rewardSafetyRelease: Double = 10
+
+    /// Touche jouée → note renvoyée, pour savoir quoi relâcher au lever.
+    ///
+    /// Mémorisée plutôt que recalculée : changer de mode entre l'appui et le
+    /// lever ferait sinon relâcher une note qu'on n'a jamais envoyée, et
+    /// laisserait sonner celle qu'on avait envoyée.
+    ///
+    /// Le jeton distingue deux appuis successifs de la même touche. Sans lui,
+    /// le minuteur de sécurité du premier appui verrait la même note à la même
+    /// place et couperait celle du second, qui n'a pourtant pas encore vécu
+    /// son délai.
+    private var rewardNotes: [UInt16: (note: UInt8, token: UInt64)] = [:]
+    private var rewardToken: UInt64 = 0
 
     /// Nombre de notes derrière la lecture instantanée. Assez pour que la
     /// variabilité d'une frappe isolée se noie, assez peu pour qu'une
@@ -224,8 +268,59 @@ final class RhythmEngine {
         externallyTriggered = false
         clockCount = 0; lastBeatTime = nil; smoothedBeat = nil; clockBpm = nil
         timer?.cancel(); timer = nil
-        metronome.stop()
+        releaseAllRewards()
+
+        // Le moteur audio ne s'arrête que si plus personne n'en a besoin :
+        // couper le métronome ne doit pas rendre le clavier muet chez qui
+        // joue Local Control désactivé. (EX-133)
+        if settings.instrumentEnabled {
+            metronome.flushPending()
+        } else {
+            metronome.stop()
+        }
         UIApplication.shared.isIdleTimerDisabled = false
+    }
+
+    /// Prépare le moteur audio et charge le timbre choisi. (EX-133)
+    ///
+    /// Appelée au premier besoin plutôt qu'au lancement : ouvrir la session
+    /// audio coûte, et l'immense majorité des séances n'active pas le module.
+    /// Idempotente — `start()` et `loadInstrument` ressortent aussitôt si
+    /// l'état est déjà celui voulu.
+    func prepareInstrument() {
+        do {
+            if !metronome.isRunning {
+                try metronome.start()
+                outputLatency = metronome.outputLatency
+            }
+            metronome.loadInstrument(settings.instrumentVoice)
+        } catch {
+            message = String(format: NSLocalizedString("Instrument unavailable: %@", comment: ""),
+                             error.localizedDescription)
+            settings.instrumentEnabled = false
+        }
+    }
+
+    /// Suit la bascule du module sonore depuis les Réglages.
+    func instrumentSettingChanged() {
+        if settings.instrumentEnabled {
+            prepareInstrument()
+        } else {
+            metronome.instrumentSilence()
+            if !running { metronome.stop() }
+        }
+    }
+
+    /// Note d'essai, pour vérifier le module sans lancer de séance ni jouer.
+    /// Un bouton de test par sous-système : c'est ce qui évite les pannes
+    /// muettes. (EX-052)
+    func testInstrument() {
+        prepareInstrument()
+        guard settings.instrumentEnabled else { return }
+        metronome.instrumentNoteOn(60, velocity: 90)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+            self?.metronome.instrumentNoteOff(60)
+        }
     }
 
     /// Réancrage propre au changement de tempo. (EX-048)
@@ -406,13 +501,29 @@ final class RhythmEngine {
         }
     }
 
+    /// Le filtre de canal dit quelle partie du clavier nous intéresse : il vaut
+    /// donc pour la mesure comme pour le module sonore. (EX-017)
+    private func listens(to channel: UInt8) -> Bool {
+        settings.midiChannels.isEmpty || settings.midiChannels.contains(Int(channel) + 1)
+    }
+
     private func handle(time: Double, note: UInt8, velocity: UInt8, channel: UInt8) {
-        guard Int(velocity) >= settings.minVelocity else { return }                  // (EX-018)
-        guard settings.midiChannels.isEmpty || settings.midiChannels.contains(Int(channel) + 1)  // (EX-017)
-        else { return }
+        guard listens(to: channel) else { return }
 
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
+
+            // Le module sonore répond à toutes les frappes, y compris sous le
+            // seuil de vélocité : celui-ci écarte du bruit de mesure (EX-018),
+            // pas des notes qu'on vient bel et bien de jouer. Il passe donc
+            // avant le filtre, et avant même que la séance soit lancée — sinon
+            // arrêter le métronome rendrait le clavier muet. (EX-133)
+            if self.settings.instrumentEnabled {
+                self.prepareInstrument()
+                self.metronome.instrumentNoteOn(note, velocity: velocity)
+            }
+
+            guard Int(velocity) >= self.settings.minVelocity else { return }         // (EX-018)
             self.midi.lastNote = NoteName.of(note)
             guard self.running else { return }
 
@@ -434,13 +545,12 @@ final class RhythmEngine {
             self.openGroup = (index: self.hits.count - 1, start: time)
 
             if self.settings.feedbackEnabled, abs(delta) <= self.tolerance {
+                let reward: UInt8
                 switch self.settings.feedbackMode {
-                case .octave:
-                    let shifted = UInt8(min(127, Int(note) + 12))
-                    self.midi.playNote(shifted, velocity: velocity, channel: channel)
-                case .mute:
-                    self.midi.playNote(note, velocity: velocity, channel: channel)
+                case .octave: reward = UInt8(min(127, Int(note) + 12))  // (EX-130)
+                case .mute:   reward = note                            // (EX-131)
                 }
+                self.startReward(reward, for: note, velocity: velocity, channel: channel)
             }
 
             self.deltas.append(delta)
@@ -453,6 +563,56 @@ final class RhythmEngine {
             self.lastDelta = delta
             self.recomputeStats()
         }
+    }
+
+    // =====================================================================
+    // Retour clavier (EX-130 / EX-131)
+    //
+    // La note de retour part à l'appui et s'éteint au lever de la touche qui
+    // l'a déclenchée. Elle dure donc exactement ce que dure le geste, ce
+    // qu'aucune durée calculée d'avance ne savait faire : fixe, elle traînait
+    // sur les valeurs brèves ; rapportée à la subdivision, elle polluait dès
+    // qu'on jouait vraiment un morceau, où les durées ne suivent pas la grille.
+    // =====================================================================
+
+    private func startReward(_ reward: UInt8, for played: UInt8,
+                             velocity: UInt8, channel: UInt8) {
+        let key = Self.rewardKey(played, channel)
+        // Réappui sans lever perçu : on éteint l'ancienne avant d'en lancer une
+        // nouvelle, sinon la première ne serait plus jamais relâchée.
+        if let previous = rewardNotes[key] { midi.stopNote(previous.note, channel: channel) }
+
+        rewardToken &+= 1
+        let token = rewardToken
+        rewardNotes[key] = (note: reward, token: token)
+        midi.startNote(reward, velocity: velocity, channel: channel)
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.rewardSafetyRelease) { [weak self] in
+            guard let self, self.rewardNotes[key]?.token == token else { return }
+            self.stopReward(played, channel: channel)
+        }
+    }
+
+    private func stopReward(_ played: UInt8, channel: UInt8) {
+        let key = Self.rewardKey(played, channel)
+        guard let reward = rewardNotes.removeValue(forKey: key) else { return }
+        midi.stopNote(reward.note, channel: channel)
+    }
+
+    /// Éteint tout retour en cours. À l'arrêt, à la coupure du réglage et à la
+    /// perte de la source : rien ne doit survivre à ce qui l'a déclenché.
+    private func releaseAllRewards() {
+        rewardNotes.removeAll()
+        midi.releaseAllSentNotes()
+    }
+
+    /// Suit la bascule du retour clavier depuis les Réglages.
+    func feedbackSettingChanged() {
+        if !settings.feedbackEnabled { releaseAllRewards() }
+    }
+
+    private static func rewardKey(_ note: UInt8, _ channel: UInt8) -> UInt16 {
+        UInt16(channel & 0x0F) << 8 | UInt16(note)
     }
 
     private func recomputeStats() {

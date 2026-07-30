@@ -28,9 +28,14 @@ collected — see `PrivacyInfo.xcprivacy`.
   `Tolerance` / `Regularity`)
 - **Synced start** — starts on a connected drum machine's MIDI Start message
   and follows its clock, instead of a fixed delay (`Core/RhythmEngine.swift`)
-- **Sound reward** — optional MIDI echo back to the instrument when a note
-  lands in the "right" zone, either an octave up or muted-if-inaccurate
-  (`Settings.feedbackMode`)
+- **Instrument** — the iPhone can voice the notes it receives itself, with one
+  of five synthesised timbres, so notes and click share one speaker and one
+  latency (`Audio/InstrumentSynth.swift`). Meant for playing with Local
+  Control off; the sustain pedal is followed
+- **Keyboard feedback** — optional MIDI note sent back to the instrument when
+  a hit lands in the "right" zone, either an octave up or at the same pitch
+  (`Settings.feedbackMode`). It starts on key press and stops on key release,
+  so it lasts exactly as long as the gesture
 - English by default, French automatically when the device is in French
   (`Localizable.xcstrings`); note names switch between letters (C, D, E…) and
   solfège (Do, Ré, Mi…) the same way

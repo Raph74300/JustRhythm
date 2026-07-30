@@ -8,6 +8,21 @@ and this project aligns its version numbers with the requirements document
 
 ## [Unreleased]
 
+## [2.5] — 2026-07-30
+
+### Added
+- **Instrument — the iPhone voices your notes** — A new setting, separate from keyboard feedback, makes the iPhone sound every note it receives with a timbre of your choosing: piano, electric piano, harpsichord, acoustic guitar or marimba. Notes and metronome click then leave by the same speaker and the same path, so there is nothing to correct between them. Intended for playing with Local Control off on the instrument. The sustain pedal is followed; 24-voice polyphony; a test button plays a note without starting a session. Sounds are synthesised in the app — nothing is bundled, downloaded or stored. (EX-133)
+
+### Changed
+- **Keyboard feedback now lasts exactly as long as your gesture** — The note sent back on an accurate hit starts on key press and stops on key release, instead of running for a fixed duration. Previous attempts — 150 ms flat, then two thirds of the subdivision — both broke down in real music, where note lengths do not follow the grid: from sixteenth notes on, the returned note stopped being a confirmation and became noise. No duration is computed at all any more. Nothing outlives its trigger: notes are released on stop, when the setting is switched off, and if the keyboard disappears. (EX-130, EX-131)
+- **Settings renamed to say what happens** — "Reward / Sound reward" becomes "Keyboard feedback / Send a note back on accurate hits", and the two modes become "Octave note" and "Same note". The former "Note muted if inaccurate" was untrue in the factory configuration: with Local Control on nothing is muted, and accurate hits are in fact reinforced — the opposite of what the name announced. Labels now describe what the app emits; what you need to configure to get the effect you want lives in the footer. (EX-130, EX-131)
+
+### Fixed
+- **Errors in the Instrument section are now visible where they happen** — A failure used to post its message to the measurement screen, behind the Settings sheet: the switch appeared to simply refuse to turn on, with no explanation available.
+
+### Removed
+- **Reward ping on the iPhone speaker** — Built, then withdrawn. Playing the reward through the metronome's own audio engine worked technically, but proved unusable from eighth notes on: a ping bursting in on every accurate hit covers the click instead of blending with it, you lose the thread of the metronome, and the app feels like it is malfunctioning while doing exactly what it was asked. Replaced by the Instrument setting above, which is continuous and expected, and reaches the same goal. (see the decision log)
+
 ## [2.4] — 2026-07-29
 
 ### Fixed

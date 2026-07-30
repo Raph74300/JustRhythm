@@ -43,6 +43,15 @@ final class MIDIManager {
     /// (instant en secondes host, note, vélocité, canal 0-15)
     @ObservationIgnored var onNote: ((Double, UInt8, UInt8, UInt8) -> Void)?
 
+    /// (note, canal 0-15). Ne sert **pas** à la mesure, qui ne compte que des
+    /// frappes (EX-016) : uniquement à relâcher la note du module sonore, qui
+    /// tiendrait sinon indéfiniment. (EX-133)
+    @ObservationIgnored var onNoteOff: ((UInt8, UInt8) -> Void)?
+
+    /// (numéro de contrôleur, valeur, canal 0-15). Même remarque : la pédale
+    /// reste ignorée de la mesure, elle n'est transmise qu'au module sonore.
+    @ObservationIgnored var onController: ((UInt8, UInt8, UInt8) -> Void)?
+
     /// Prévenu quand la source active disparaît en cours de séance. (EX-014)
     @ObservationIgnored var onSourceLost: ((String) -> Void)?
 
@@ -149,16 +158,45 @@ final class MIDIManager {
 
     // =====================================================================
 
-    /// Joue une note en retour sur l'instrument, en réponse à une frappe
-    /// jugée juste. Un Note Off la coupe après un bref délai : la boucle ne
-    /// dépend pas de ce que fait le clavier de son côté.
-    func playNote(_ note: UInt8, velocity: UInt8, channel: UInt8) {
+    /// Notes envoyées à l'instrument et pas encore relâchées, décomptées.
+    ///
+    /// Un décompte et non un ensemble : en mode octave, deux touches distantes
+    /// d'une octave produisent la même note de retour. Sans compter, relâcher
+    /// la première éteindrait celle que la seconde fait encore sonner.
+    @ObservationIgnored private var sentNotes: [UInt16: Int] = [:]
+
+    /// Attaque une note en retour sur l'instrument, sans fixer sa fin.
+    /// (EX-130 / EX-131)
+    func startNote(_ note: UInt8, velocity: UInt8, channel: UInt8) {
         guard let destination else { return }
+        sentNotes[Self.key(note, channel), default: 0] += 1
         send([0x90 | (channel & 0x0F), note, velocity], to: destination)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
-            guard let self, let destination = self.destination else { return }
-            self.send([0x80 | (channel & 0x0F), note, 0], to: destination)
+    }
+
+    /// Relâche une note envoyée par `startNote`. Sans effet si elle ne sonne
+    /// pas : on n'émet jamais un Note Off pour une note qu'on n'a pas jouée,
+    /// sous peine de couper celle que l'instrumentiste tient lui-même.
+    func stopNote(_ note: UInt8, channel: UInt8) {
+        let key = Self.key(note, channel)
+        guard let count = sentNotes[key], count > 0 else { return }
+        if count > 1 { sentNotes[key] = count - 1 } else { sentNotes[key] = nil }
+        guard let destination else { return }
+        send([0x80 | (channel & 0x0F), note, 0], to: destination)
+    }
+
+    /// Éteint tout ce qui traîne. Appelée à l'arrêt d'une séance, à la coupure
+    /// du retour et à la perte de la source : une note de retour ne doit jamais
+    /// survivre à ce qui l'a déclenchée.
+    func releaseAllSentNotes() {
+        guard let destination else { sentNotes.removeAll(); return }
+        for (key, _) in sentNotes {
+            send([0x80 | UInt8(key >> 8), UInt8(key & 0xFF), 0], to: destination)
         }
+        sentNotes.removeAll()
+    }
+
+    private static func key(_ note: UInt8, _ channel: UInt8) -> UInt16 {
+        UInt16(channel & 0x0F) << 8 | UInt16(note)
     }
 
     private func send(_ bytes: [UInt8], to destination: MIDIEndpointRef) {
@@ -187,8 +225,13 @@ final class MIDIManager {
         }
     }
 
-    /// Ne retient que les Note On de vélocité non nulle. Note Off, pédale,
-    /// aftertouch, pitch bend et messages système sont ignorés. (EX-016)
+    /// Seuls les Note On de vélocité non nulle nourrissent la mesure : c'est
+    /// `onNote`, et lui seul, qui compte une frappe. (EX-016)
+    ///
+    /// Note Off et pédale sont désormais relayés à part, pour le module sonore
+    /// qui doit bien relâcher ce qu'il a fait sonner (EX-133). Ils ne passent
+    /// jamais par `onNote` : rien de ce qui suit ne compte comme une note
+    /// jouée. Aftertouch, pitch bend et messages système restent ignorés.
     private func parse(_ bytes: [UInt8], at time: Double) {
         var i = 0
         while i < bytes.count {
@@ -226,6 +269,12 @@ final class MIDIManager {
 
             if command == 0x90 && d2 > 0 {
                 onNote?(time, d1, d2, status & 0x0F)
+            } else if command == 0x80 || (command == 0x90 && d2 == 0) {
+                // Beaucoup de claviers relâchent par un Note On de vélocité
+                // nulle plutôt que par un vrai Note Off : les deux comptent.
+                onNoteOff?(d1, status & 0x0F)
+            } else if command == 0xB0 {
+                onController?(d1, d2, status & 0x0F)
             }
         }
     }
