@@ -33,12 +33,7 @@ collected — see `PrivacyInfo.xcprivacy`.
   latency (`Audio/InstrumentSynth.swift`). Full 88-key range, 64-voice
   polyphony, sustain pedal followed. Meant for playing with Local Control off.
   On accurate hits it can add an octave, or mute everything that misses the
-  zone (`Settings.accuracyVoicing`) — the accuracy option lives with whatever
-  produces the sound, which is why it is not the same setting as the one below
-- **Keyboard feedback** — optional MIDI note sent back to the instrument when
-  a hit lands in the "right" zone, either an octave up or at the same pitch
-  (`Settings.feedbackMode`). It starts on key press and stops on key release,
-  so it lasts exactly as long as the gesture
+  zone (`Settings.accuracyVoicing`)
 - English by default, French automatically when the device is in French
   (`Localizable.xcstrings`); note names switch between letters (C, D, E…) and
   solfège (Do, Ré, Mi…) the same way

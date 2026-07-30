@@ -96,6 +96,9 @@ final class RhythmEngine {
     /// largement la gigue du transport — de l'ordre du pour cent — et la perte
     /// d'une impulsion d'horloge, qui allonge un temps de 1/24, soit 4,2 %.
     private static let tempoJumpRatio = 0.08
+    /// Distingue deux départs successifs, pour qu'une vérification d'horloge
+    /// lancée par le premier ne parle pas au nom du second.
+    private var clockWatchToken: UInt64 = 0
     private var lastBeatTime: Double?
     private var smoothedBeat: Double?
     private let queue = DispatchQueue(label: "fr.justrhythm.scheduler", qos: .userInteractive)
@@ -113,7 +116,6 @@ final class RhythmEngine {
                 // lancée doit être relâchée même si l'on coupe entre l'appui et
                 // le lever. (EX-130 / EX-131 / EX-134)
                 self.releaseVoicedNote(note)
-                self.stopReward(note, channel: channel)
             }
         }
         midi.onController = { [weak self] controller, value, channel in
@@ -126,7 +128,6 @@ final class RhythmEngine {
         midi.onSourceLost = { [weak self] _ in
             guard let self else { return }
             self.stop()
-            self.releaseAllRewards()
             self.resetStats()
             self.beats.removeAll()
             self.message = nil
@@ -176,36 +177,6 @@ final class RhythmEngine {
         return beat * Double(settings.beatsPerBar > 0 ? settings.beatsPerBar : 4)
     }
 
-    /// Au-delà, une note de retour est relâchée d'office. (EX-130 / EX-131)
-    ///
-    /// Le retour suit le lever de touche, ce qui suppose de recevoir le Note
-    /// Off correspondant. S'il se perd — message manqué, clavier débranché,
-    /// canal écouté modifié en cours de séance — la note resterait accrochée
-    /// indéfiniment. Ce filet lui rend le seul mérite de la durée fixe,
-    /// l'extinction garantie, sans revenir à son défaut.
-    ///
-    /// Une mesure, exactement : dix secondes fixes ne voulaient pas dire la
-    /// même chose à 40 et à 200 bpm, une mesure si.
-    ///
-    /// Conséquence assumée : une note tenue au-delà d'une mesure est relâchée
-    /// d'office, y compris à la pédale par-dessus une barre de mesure. Le filet
-    /// est serré exprès — il vaut mieux écourter une tenue que laisser une note
-    /// fantôme s'installer. Aucune borne : le tempo est déjà limité à 30-240 bpm
-    /// et les temps par mesure à 12, la valeur reste donc toujours finie.
-    private var rewardSafetyRelease: Double { barDuration }
-
-    /// Touche jouée → note renvoyée, pour savoir quoi relâcher au lever.
-    ///
-    /// Mémorisée plutôt que recalculée : changer de mode entre l'appui et le
-    /// lever ferait sinon relâcher une note qu'on n'a jamais envoyée, et
-    /// laisserait sonner celle qu'on avait envoyée.
-    ///
-    /// Le jeton distingue deux appuis successifs de la même touche. Sans lui,
-    /// le minuteur de sécurité du premier appui verrait la même note à la même
-    /// place et couperait celle du second, qui n'a pourtant pas encore vécu
-    /// son délai.
-    private var rewardNotes: [UInt16: (note: UInt8, token: UInt64)] = [:]
-    private var rewardToken: UInt64 = 0
 
     /// Une surcharge ne se signale qu'une fois par séance : la répéter
     /// noierait le message utile sous sa propre répétition.
@@ -301,7 +272,6 @@ final class RhythmEngine {
         externallyTriggered = false
         lastBeatTime = nil; smoothedBeat = nil; clockBpm = nil
         timer?.cancel(); timer = nil
-        releaseAllRewards()
 
         // Le moteur audio ne s'arrête que si plus personne n'en a besoin :
         // couper le métronome ne doit pas rendre le clavier muet chez qui
@@ -437,6 +407,7 @@ final class RhythmEngine {
             guard settings.syncStart, !running else { return }
             lastBeatTime = nil; smoothedBeat = nil; clockBpm = nil
             start(anchoredAt: time)
+            watchForMissingClock()
 
         case .stop:
             guard settings.syncStart, running, externallyTriggered else { return }
@@ -518,6 +489,32 @@ final class RhythmEngine {
         }
     }
 
+    /// Vérifie qu'une horloge suit bien le message Start. (EX-053 / EX-054)
+    ///
+    /// Le Start donne l'instant du départ, jamais le tempo — c'est écrit dans
+    /// le protocole et tranché de longue date ici. Reste que sans horloge
+    /// derrière, l'application part pile au bon moment puis continue **à son
+    /// propre tempo**, et dérive aussitôt de la boîte à rythmes. Vu de
+    /// l'instrumentiste, elle « ne se synchronise pas » : rien ne distingue ce
+    /// cas d'une panne, puisque le départ, lui, a bien fonctionné.
+    ///
+    /// Beaucoup de claviers ne transmettent l'horloge que si on le leur demande,
+    /// et le réglage ne porte pas le même nom d'une marque à l'autre. Le dire au
+    /// bout de deux temps coûte une phrase et évite de chercher du côté de
+    /// l'application un réglage qui est sur l'instrument.
+    private func watchForMissingClock() {
+        clockWatchToken &+= 1
+        let token = clockWatchToken
+        let delay = min(max(2 * 60 / settings.bpm, 1.5), 5)
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+            guard let self, self.clockWatchToken == token,
+                  self.running, self.externallyTriggered, self.clockBpm == nil
+            else { return }
+            self.message = String(localized: "Started on the keyboard's Start message, but no MIDI clock is arriving. The tempo stays the one set here and will drift apart from your drum machine — enable clock transmission on the instrument.")
+        }
+    }
+
     /// Le tempo reçu du clavier devient celui de l'application.
     ///
     /// Sans cela, la valeur ne vivrait que le temps de la séance : à l'arrêt,
@@ -553,6 +550,7 @@ final class RhythmEngine {
 
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
+
 
             // L'écart est calculé d'entrée, avant toute sonorisation : c'est lui
             // qui décide si l'iPhone ajoute une octave ou étouffe la note
@@ -592,14 +590,6 @@ final class RhythmEngine {
             if self.hits.count > 400 { self.hits.removeFirst(self.hits.count - 400) }
             self.openGroup = (index: self.hits.count - 1, start: time)
 
-            if self.settings.feedbackEnabled, abs(delta) <= self.tolerance {
-                let reward: UInt8
-                switch self.settings.feedbackMode {
-                case .octave: reward = UInt8(min(127, Int(note) + 12))  // (EX-130)
-                case .mute:   reward = note                            // (EX-131)
-                }
-                self.startReward(reward, for: note, velocity: velocity, channel: channel)
-            }
 
             self.deltas.append(delta)
             self.notesPlayed += 1
@@ -660,58 +650,6 @@ final class RhythmEngine {
         if octaveCompanions.remove(note) != nil {
             metronome.instrumentNoteOff(Self.companion(of: note))
         }
-    }
-
-    // =====================================================================
-    // Retour clavier (EX-130 / EX-131)
-    //
-    // La note de retour part à l'appui et s'éteint au lever de la touche qui
-    // l'a déclenchée. Elle dure donc exactement ce que dure le geste, ce
-    // qu'aucune durée calculée d'avance ne savait faire : fixe, elle traînait
-    // sur les valeurs brèves ; rapportée à la subdivision, elle polluait dès
-    // qu'on jouait vraiment un morceau, où les durées ne suivent pas la grille.
-    // =====================================================================
-
-    private func startReward(_ reward: UInt8, for played: UInt8,
-                             velocity: UInt8, channel: UInt8) {
-        let key = Self.rewardKey(played, channel)
-        // Réappui sans lever perçu : on éteint l'ancienne avant d'en lancer une
-        // nouvelle, sinon la première ne serait plus jamais relâchée.
-        if let previous = rewardNotes[key] { midi.stopNote(previous.note, channel: channel) }
-
-        rewardToken &+= 1
-        let token = rewardToken
-        rewardNotes[key] = (note: reward, token: token)
-        midi.startNote(reward, velocity: velocity, channel: channel)
-
-        // Le délai est figé au moment de l'appui : c'est le tempo en vigueur
-        // quand la note part qui décide, pas celui qu'on aura plus tard.
-        DispatchQueue.main.asyncAfter(deadline: .now() + rewardSafetyRelease) { [weak self] in
-            guard let self, self.rewardNotes[key]?.token == token else { return }
-            self.stopReward(played, channel: channel)
-        }
-    }
-
-    private func stopReward(_ played: UInt8, channel: UInt8) {
-        let key = Self.rewardKey(played, channel)
-        guard let reward = rewardNotes.removeValue(forKey: key) else { return }
-        midi.stopNote(reward.note, channel: channel)
-    }
-
-    /// Éteint tout retour en cours. À l'arrêt, à la coupure du réglage et à la
-    /// perte de la source : rien ne doit survivre à ce qui l'a déclenché.
-    private func releaseAllRewards() {
-        rewardNotes.removeAll()
-        midi.releaseAllSentNotes()
-    }
-
-    /// Suit la bascule du retour clavier depuis les Réglages.
-    func feedbackSettingChanged() {
-        if !settings.feedbackEnabled { releaseAllRewards() }
-    }
-
-    private static func rewardKey(_ note: UInt8, _ channel: UInt8) -> UInt16 {
-        UInt16(channel & 0x0F) << 8 | UInt16(note)
     }
 
     /// Signale une seule fois par séance que le rendu audio a décroché.

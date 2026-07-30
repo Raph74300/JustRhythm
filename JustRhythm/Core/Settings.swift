@@ -23,57 +23,12 @@ enum Subdivision: Int, CaseIterable, Identifiable {
     }
 }
 
-/// Ce que l'application renvoie au clavier quand une frappe tombe dans la
-/// zone « juste ». (EX-130 / EX-131)
-///
-/// Les libellés décrivent ce que l'application **émet**, jamais ce qu'on
-/// entendra : cela dépend du Local Control, réglé sur l'instrument et hors de
-/// notre portée. L'ancien « Note muette si imprécise » était faux dans la
-/// configuration d'usine — Local Control activé, rien n'est muet, et ce sont
-/// au contraire les frappes justes qui s'entendent renforcées. La consigne du
-/// pied de page dit, elle, ce qu'il faut configurer pour obtenir l'effet voulu.
-enum FeedbackMode: Int, CaseIterable, Identifiable {
-    case octave = 0, mute = 1
-    var id: Int { rawValue }
-
-    /// Ce que la fonction cherche à obtenir, commun aux deux modes.
-    ///
-    /// Le seul endroit où l'intention a sa place : l'en-tête dit où va le son,
-    /// l'interrupteur à quelle condition, le mode lequel — aucun des trois n'a
-    /// à porter le pourquoi. Il s'arrête à ce qui se constate : le retour tombe
-    /// dans le temps du jeu. Qu'il fasse progresser plus vite est plausible,
-    /// n'est pas mesuré, et ne sera donc pas affirmé. (EX-097)
-    static let purpose = String(localized: "The point is immediate confirmation: an accurate hit is heard as it happens, in the time of playing rather than the time of analysis — which no number read afterwards can replace.")
-
-    /// Court : l'en-tête et l'interrupteur ont déjà posé « au clavier » et
-    /// « quand la frappe est juste ». Les répéter ici ne dirait rien de plus.
-    var label: String {
-        switch self {
-        case .octave: return String(localized: "Octave note")
-        case .mute:   return String(localized: "Same note")
-        }
-    }
-
-    var hint: String {
-        switch self {
-        case .octave:
-            return String(localized: "A note an octave above the one you played is sent back when the hit lands in the “right” zone. Leave Local Control on, so you keep hearing your own notes alongside it.")
-        case .mute:
-            return String(localized: "The note you played is sent back at the same pitch, but only when the hit is accurate. Turn Local Control off to make the instrument stay silent on inaccurate hits — otherwise it already sounds on its own, and accurate hits are merely reinforced.")
-        }
-    }
-}
-
 /// Ce que le module sonore fait différemment quand la frappe est juste. (EX-134)
 ///
-/// Volontairement distinct de `FeedbackMode`, dont il a l'air proche : les deux
-/// ne parlent pas de la même chose. Côté clavier l'application ne contrôle
-/// rien — ce qu'on entend dépend du Local Control — et « même note » désigne ce
-/// qu'elle envoie. Côté iPhone elle *est* la voix : elle peut réellement
-/// étouffer une note, et « même note » n'y aurait aucun sens puisque jouer la
-/// note est précisément sa fonction. Un enum commun aurait rangé deux jeux de
-/// valeurs incompatibles sous un même nom — la manière la plus sûre de rendre
-/// les deux réglages confus.
+/// L'application est la voix : elle peut donc réellement étouffer une note, ce
+/// qu'un retour renvoyé à l'instrument ne permettait pas — il dépendait du Local
+/// Control, réglé hors de notre portée, et cette dépendance a fini par emporter
+/// toute la fonction (voir Risques et décisions).
 ///
 /// `none` est l'état inactif : il n'y a donc pas d'interrupteur en plus, la
 /// section Instrument garde sa taille.
@@ -81,10 +36,7 @@ enum AccuracyVoicing: Int, CaseIterable, Identifiable {
     case none = 0, octave = 1, accurateOnly = 2
     var id: Int { rawValue }
 
-    /// Des verbes, là où les modes du retour clavier sont des noms : l'iPhone
-    /// agit sur sa propre voix, le clavier reçoit ce qu'on lui envoie. La
-    /// différence grammaticale suffit à ne pas confondre « Ajouter l'octave »
-    /// et « Note à l'octave » d'un coup d'œil.
+    /// Des verbes : l'application agit sur sa propre voix.
     var label: String {
         switch self {
         case .none:         return String(localized: "Nothing in particular")
@@ -114,9 +66,6 @@ final class Settings {
     /// tempo se cale ensuite sur l'horloge MIDI du clavier : les deux ne se
     /// séparent pas en pratique, un seul réglage suffit. (EX-053 / EX-054)
     var syncStart: Bool { didSet { store.set(syncStart, forKey: K.syncStart) } }
-    /// Un retour sonore signale la justesse de la frappe sur l'instrument.
-    var feedbackEnabled: Bool { didSet { store.set(feedbackEnabled, forKey: K.feedbackOn) } }
-    var feedbackMode: FeedbackMode { didSet { store.set(feedbackMode.rawValue, forKey: K.feedbackMode) } }
     /// Le téléphone sonorise lui-même les notes reçues. (EX-133)
     var instrumentEnabled: Bool { didSet { store.set(instrumentEnabled, forKey: K.instrOn) } }
     var instrumentVoice: InstrumentVoice { didSet { store.set(instrumentVoice.rawValue, forKey: K.instrVoice) } }
@@ -171,8 +120,6 @@ final class Settings {
         beatsPerBar  = Self.int(K.bar, 4)
         clickVoice   = ClickVoice(rawValue: Self.int(K.voice, 0)) ?? .claves
         syncStart    = Self.bool(K.syncStart, false)
-        feedbackEnabled = Self.bool(K.feedbackOn, false)
-        feedbackMode    = FeedbackMode(rawValue: Self.int(K.feedbackMode, 0)) ?? .octave
         instrumentEnabled = Self.bool(K.instrOn, false)
         instrumentVoice   = InstrumentVoice(rawValue: Self.int(K.instrVoice, 0)) ?? .piano
         accuracyVoicing   = AccuracyVoicing(rawValue: Self.int(K.accVoicing, 0)) ?? .none
@@ -197,7 +144,6 @@ final class Settings {
         static let bpm = "bpm", click = "click", volume = "volume"
         static let subdiv = "subdiv", bar = "bar", voice = "voice"
         static let syncStart = "syncStart"
-        static let feedbackOn = "feedbackOn", feedbackMode = "feedbackMode"
         static let instrOn = "instrOn", instrVoice = "instrVoice"
         static let accVoicing = "accVoicing"
         static let align = "align", tolPct = "tolPct", source = "source"

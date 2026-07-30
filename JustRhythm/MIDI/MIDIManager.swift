@@ -18,8 +18,10 @@ struct MIDISource: Identifiable, Hashable {
     let isBluetooth: Bool
 }
 
-/// Entrée MIDI. Aucune permission micro n'est demandée nulle part dans
-/// l'application. (EX-010)
+/// Entrée MIDI, et **entrée seulement** : l'application n'émet plus rien vers
+/// l'instrument depuis l'abandon du retour clavier (voir Risques et décisions).
+/// Un lien à sens unique, qui ne peut donc plus reboucler sur lui-même.
+/// Aucune permission micro n'est demandée nulle part. (EX-010)
 ///
 /// Phase 1 : USB filaire. L'appairage Bluetooth intégré est reporté — un
 /// clavier déjà appairé dans les réglages iOS apparaît malgré tout ici, avec
@@ -60,9 +62,7 @@ final class MIDIManager {
 
     @ObservationIgnored private var client = MIDIClientRef()
     @ObservationIgnored private var port = MIDIPortRef()
-    @ObservationIgnored private var outputPort = MIDIPortRef()
     @ObservationIgnored private var connected: MIDIEndpointRef?
-    @ObservationIgnored private var destination: MIDIEndpointRef?
     @ObservationIgnored private var runningStatus: UInt8 = 0
 
     /// 24 impulsions par noire, c'est la définition du MIDI Clock.
@@ -81,7 +81,6 @@ final class MIDIManager {
         MIDIInputPortCreateWithBlock(client, "Input" as CFString, &port) { [weak self] packets, _ in
             self?.read(packets)
         }
-        MIDIOutputPortCreate(client, "Output" as CFString, &outputPort)
         refresh()
     }
 
@@ -122,7 +121,6 @@ final class MIDIManager {
         } else {
             if let previousName { onSourceLost?(previousName) }
             connected = nil
-            destination = nil
             selectedID = 0
             lastNote = nil
         }
@@ -147,73 +145,10 @@ final class MIDIManager {
             connected = endpoint
             runningStatus = 0
             clockDivider = 0
-            destination = Self.matchingDestination(for: endpoint)
         }
     }
 
-    /// La source et la destination d'un même clavier partagent en général la
-    /// même entité MIDI : c'est ce qui permet de retrouver la sortie sans
-    /// demander un second choix à l'utilisateur.
-    private static func matchingDestination(for source: MIDIEndpointRef) -> MIDIEndpointRef? {
-        var entity = MIDIEntityRef()
-        guard MIDIEndpointGetEntity(source, &entity) == noErr, entity != 0,
-              MIDIEntityGetNumberOfDestinations(entity) > 0 else { return nil }
-        let dest = MIDIEntityGetDestination(entity, 0)
-        return dest != 0 ? dest : nil
-    }
 
-    // =====================================================================
-
-    /// Notes envoyées à l'instrument et pas encore relâchées, décomptées.
-    ///
-    /// Un décompte et non un ensemble : en mode octave, deux touches distantes
-    /// d'une octave produisent la même note de retour. Sans compter, relâcher
-    /// la première éteindrait celle que la seconde fait encore sonner.
-    @ObservationIgnored private var sentNotes: [UInt16: Int] = [:]
-
-    /// Attaque une note en retour sur l'instrument, sans fixer sa fin.
-    /// (EX-130 / EX-131)
-    func startNote(_ note: UInt8, velocity: UInt8, channel: UInt8) {
-        guard let destination else { return }
-        sentNotes[Self.key(note, channel), default: 0] += 1
-        send([0x90 | (channel & 0x0F), note, velocity], to: destination)
-    }
-
-    /// Relâche une note envoyée par `startNote`. Sans effet si elle ne sonne
-    /// pas : on n'émet jamais un Note Off pour une note qu'on n'a pas jouée,
-    /// sous peine de couper celle que l'instrumentiste tient lui-même.
-    func stopNote(_ note: UInt8, channel: UInt8) {
-        let key = Self.key(note, channel)
-        guard let count = sentNotes[key], count > 0 else { return }
-        if count > 1 { sentNotes[key] = count - 1 } else { sentNotes[key] = nil }
-        guard let destination else { return }
-        send([0x80 | (channel & 0x0F), note, 0], to: destination)
-    }
-
-    /// Éteint tout ce qui traîne. Appelée à l'arrêt d'une séance, à la coupure
-    /// du retour et à la perte de la source : une note de retour ne doit jamais
-    /// survivre à ce qui l'a déclenchée.
-    func releaseAllSentNotes() {
-        guard let destination else { sentNotes.removeAll(); return }
-        for (key, _) in sentNotes {
-            send([0x80 | UInt8(key >> 8), UInt8(key & 0xFF), 0], to: destination)
-        }
-        sentNotes.removeAll()
-    }
-
-    private static func key(_ note: UInt8, _ channel: UInt8) -> UInt16 {
-        UInt16(channel & 0x0F) << 8 | UInt16(note)
-    }
-
-    private func send(_ bytes: [UInt8], to destination: MIDIEndpointRef) {
-        var packet = MIDIPacket()
-        packet.length = UInt16(bytes.count)
-        withUnsafeMutableBytes(of: &packet.data) { raw in
-            for (index, byte) in bytes.enumerated() { raw[index] = byte }
-        }
-        var packetList = MIDIPacketList(numPackets: 1, packet: packet)
-        MIDISend(outputPort, destination, &packetList)
-    }
 
     // =====================================================================
 
@@ -240,10 +175,10 @@ final class MIDIManager {
     /// Seuls les Note On de vélocité non nulle nourrissent la mesure : c'est
     /// `onNote`, et lui seul, qui compte une frappe. (EX-016)
     ///
-    /// Note Off et pédale sont désormais relayés à part, pour le module sonore
-    /// qui doit bien relâcher ce qu'il a fait sonner (EX-133). Ils ne passent
-    /// jamais par `onNote` : rien de ce qui suit ne compte comme une note
-    /// jouée. Aftertouch, pitch bend et messages système restent ignorés.
+    /// Note Off et pédale sont relayés à part, pour le module sonore qui doit
+    /// bien relâcher ce qu'il a fait sonner (EX-133). Ils ne passent jamais par
+    /// `onNote` : rien de ce qui suit ne compte comme une note jouée.
+    /// Aftertouch, pitch bend et messages système restent ignorés.
     private func parse(_ bytes: UnsafePointer<UInt8>, count: Int, at time: Double) {
         var i = 0
         while i < count {
@@ -267,8 +202,13 @@ final class MIDIManager {
                             clockDivider = 0
                             onTransport?(time, .clock)
                         }
-                    case 0xFA: onTransport?(time, .start)
-                    case 0xFB: onTransport?(time, .cont)
+                    case 0xFA, 0xFB:
+                        // Un départ redéfinit où tombe le temps : le diviseur
+                        // repart de zéro, sinon la première noire annoncée
+                        // tomberait à une phase quelconque, jusqu'à vingt-trois
+                        // impulsions après la vraie.
+                        clockDivider = 0
+                        onTransport?(time, status == 0xFA ? .start : .cont)
                     case 0xFC: onTransport?(time, .stop)
                     default: break
                     }

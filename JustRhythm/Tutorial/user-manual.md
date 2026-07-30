@@ -85,19 +85,8 @@ The sounds are synthesised inside the app rather than sampled, so nothing is dow
 
 This only applies **while the metronome is running**: stopped, there is no accuracy to judge and every note sounds — otherwise stopping the metronome would leave your keyboard silent.
 
-Not to be confused with **Keyboard feedback** below, which is independent: this one acts on the iPhone's own voice, the other sends a note to your instrument. Turn both on and you will hear both.
-
 Off by default.
 
-### Keyboard feedback
-An optional note is sent back to your instrument when a hit lands in the "right" zone. The point is immediate confirmation: an accurate hit is heard as it happens, in the time of playing rather than the time of analysis.
-
-The note starts when you press and stops when you release, so it lasts exactly as long as your gesture — whatever the tempo, the subdivision, or how the passage is written. Two modes:
-
-- **Octave note** — a note an octave above the one you played is sent back. Keep **Local Control on** so your own notes keep sounding alongside it.
-- **Same note** — the note you played is sent back at the same pitch, but only when the hit is accurate. Turn **Local Control off** to make the instrument stay silent on inaccurate hits; leave it on and it already sounds on its own, so accurate hits are merely reinforced.
-
-Off by default. Both modes need your instrument to accept incoming MIDI notes, not just send them. Nothing survives its trigger: notes are released when you stop, when you switch the setting off, and if the keyboard disappears. Should a release message go missing, a returned note is let go after one bar anyway, so a stray note can never settle in. The flip side is that a note you hold beyond a bar has its echo cut short — including one carried across a bar line on the pedal.
 
 ### Chords
 Notes played within a short window (default 30 ms) count as one event, timestamped on the first note, with their spread shown alongside it — so playing a chord doesn't look like several separate timing errors. Set the window to 0 to count every note individually; lower it if you're working on fast repeated single notes rather than chords.

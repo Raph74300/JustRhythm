@@ -27,7 +27,6 @@ struct SettingsView: View {
                 gridSection
                 syncSection
                 instrumentSection
-                feedbackSection
                 chordSection
                 alignmentSection
                 toleranceSection
@@ -154,8 +153,8 @@ struct SettingsView: View {
         }
     }
 
-    /// Le téléphone sonorise les notes reçues. Rien à voir avec la récompense
-    /// ci-dessous : ici tout ce qui est joué sonne, juste ou non. (EX-133)
+    /// Le téléphone sonorise les notes reçues : tout ce qui est joué sonne,
+    /// juste ou non, l'option de justesse ne faisant que nuancer. (EX-133)
     private var instrumentSection: some View {
         Section {
             Toggle("Play notes on the iPhone", isOn: Binding(
@@ -170,9 +169,7 @@ struct SettingsView: View {
             .disabled(!s.instrumentEnabled)
 
             // L'option de justesse appartient à ce qui produit le son : ici
-            // l'iPhone, dans la section « Retour clavier » l'instrument. C'est
-            // ce qui évite un troisième réglage et un croisement sortie × forme
-            // dont une case serait vide. (EX-134)
+            // l'iPhone, seule source de son que l'application pilote. (EX-134)
             Picker("On accurate hits", selection: Binding(
                 get: { s.accuracyVoicing }, set: { s.accuracyVoicing = $0 })) {
                 ForEach(AccuracyVoicing.allCases) { Text($0.label).tag($0) }
@@ -196,38 +193,7 @@ struct SettingsView: View {
         } footer: {
             VStack(alignment: .leading, spacing: 8) {
                 Text("The iPhone plays every note it receives, with the timbre chosen here — the metronome click and your notes then come out of the same speaker, by the same path. Intended for playing with Local Control off on the instrument: leave it on and you will hear each note twice.")
-                Text("On accurate hits, the iPhone can add a note an octave up, or mute everything that misses the zone. This only applies while the metronome is running: stopped, there is no accuracy to judge and every note sounds. Keyboard feedback below is separate — turn both on and you will hear both.")
-            }
-        }
-    }
-
-    /// Une note renvoyée au clavier quand la frappe est juste. (EX-130 / EX-131)
-    ///
-    /// Chaque niveau ajoute une information et aucun ne répète le précédent :
-    /// l'en-tête dit **où** part le son, l'interrupteur **à quelle condition**,
-    /// le mode **lequel**. C'est ce qui permet aux libellés de mode de rester
-    /// courts sans rien perdre — le sélecteur replié est lu dans le contexte
-    /// que les deux lignes du dessus viennent de poser.
-    private var feedbackSection: some View {
-        Section {
-            Toggle("Send a note back on accurate hits", isOn: Binding(
-                get: { s.feedbackEnabled },
-                set: { s.feedbackEnabled = $0; engine.feedbackSettingChanged() }))
-
-            Picker("Mode", selection: Binding(
-                get: { s.feedbackMode }, set: { s.feedbackMode = $0 })) {
-                ForEach(FeedbackMode.allCases) { Text($0.label).tag($0) }
-            }
-            .disabled(!s.feedbackEnabled)
-        } header: {
-            Text("Keyboard feedback")
-        } footer: {
-            // L'intention d'abord, commune aux deux modes, puis la consigne
-            // propre à celui qui est choisi : celles du Local Control diffèrent
-            // d'un mode à l'autre et se contrediraient dans un pavé unique.
-            VStack(alignment: .leading, spacing: 8) {
-                Text(FeedbackMode.purpose)
-                Text(s.feedbackMode.hint)
+                Text("On accurate hits, the iPhone can add a note an octave up, or mute everything that misses the zone. This only applies while the metronome is running: stopped, there is no accuracy to judge and every note sounds.")
             }
         }
     }
