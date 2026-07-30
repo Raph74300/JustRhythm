@@ -168,16 +168,34 @@ final class RhythmEngine {
         Tolerance.limit(percent: settings.tolerancePercent, step: gridPeriod)
     }
 
+    /// Durée d'une mesure, en secondes.
+    ///
+    /// Passe par `gridPeriod`, donc suit l'horloge du clavier quand elle est
+    /// reçue. Sans accent réglé, `beatsPerBar` vaut 0 et il n'y a pas de mesure
+    /// à proprement parler : on retient quatre temps, faute de mieux, plutôt
+    /// que de rendre zéro.
+    var barDuration: Double {
+        let beat = gridPeriod * Double(settings.subdivision.rawValue)
+        return beat * Double(settings.beatsPerBar > 0 ? settings.beatsPerBar : 4)
+    }
+
     /// Au-delà, une note de retour est relâchée d'office. (EX-130 / EX-131)
     ///
-    /// Le retour suit désormais le lever de touche, ce qui suppose de recevoir
-    /// le Note Off correspondant. S'il se perd — message manqué, clavier
-    /// débranché, canal écouté modifié en cours de séance — la note resterait
-    /// accrochée indéfiniment. La durée fixe qu'on avait avant garantissait au
-    /// moins l'extinction ; ce filet lui rend ce seul mérite, sans revenir à
-    /// son défaut. Large exprès : il ne doit jamais tomber sur une note
-    /// réellement tenue, seulement sur une note oubliée.
-    private static let rewardSafetyRelease: Double = 10
+    /// Le retour suit le lever de touche, ce qui suppose de recevoir le Note
+    /// Off correspondant. S'il se perd — message manqué, clavier débranché,
+    /// canal écouté modifié en cours de séance — la note resterait accrochée
+    /// indéfiniment. Ce filet lui rend le seul mérite de la durée fixe,
+    /// l'extinction garantie, sans revenir à son défaut.
+    ///
+    /// Une mesure, exactement : dix secondes fixes ne voulaient pas dire la
+    /// même chose à 40 et à 200 bpm, une mesure si.
+    ///
+    /// Conséquence assumée : une note tenue au-delà d'une mesure est relâchée
+    /// d'office, y compris à la pédale par-dessus une barre de mesure. Le filet
+    /// est serré exprès — il vaut mieux écourter une tenue que laisser une note
+    /// fantôme s'installer. Aucune borne : le tempo est déjà limité à 30-240 bpm
+    /// et les temps par mesure à 12, la valeur reste donc toujours finie.
+    private var rewardSafetyRelease: Double { barDuration }
 
     /// Touche jouée → note renvoyée, pour savoir quoi relâcher au lever.
     ///
@@ -587,7 +605,9 @@ final class RhythmEngine {
         rewardNotes[key] = (note: reward, token: token)
         midi.startNote(reward, velocity: velocity, channel: channel)
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + Self.rewardSafetyRelease) { [weak self] in
+        // Le délai est figé au moment de l'appui : c'est le tempo en vigueur
+        // quand la note part qui décide, pas celui qu'on aura plus tard.
+        DispatchQueue.main.asyncAfter(deadline: .now() + rewardSafetyRelease) { [weak self] in
             guard let self, self.rewardNotes[key]?.token == token else { return }
             self.stopReward(played, channel: channel)
         }

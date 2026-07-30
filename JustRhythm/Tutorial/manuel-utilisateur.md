@@ -90,7 +90,7 @@ La note part à l'appui et s'éteint au lever, si bien qu'elle dure exactement c
 - **Note à l'octave** — une note située une octave au-dessus de celle que tu joues est renvoyée. Laisse le **Local Control activé** pour continuer à entendre tes propres notes à côté.
 - **Même note** — ta note t'est renvoyée à la même hauteur, mais seulement si la frappe est juste. Coupe le **Local Control** pour que l'instrument reste silencieux quand tu es imprécis ; en le laissant activé, il sonne déjà tout seul et les frappes justes s'entendent simplement renforcées.
 
-Désactivé par défaut. Les deux modes exigent que ton instrument accepte les notes MIDI entrantes, et pas seulement qu'il en émette. Rien ne survit à son déclencheur : les notes sont relâchées à l'arrêt, à la coupure du réglage, et si le clavier disparaît.
+Désactivé par défaut. Les deux modes exigent que ton instrument accepte les notes MIDI entrantes, et pas seulement qu'il en émette. Rien ne survit à son déclencheur : les notes sont relâchées à l'arrêt, à la coupure du réglage, et si le clavier disparaît. Si un message de relâchement se perdait, la note de retour est lâchée au bout d'une mesure de toute façon, si bien qu'une note fantôme ne peut jamais s'installer. Revers de la médaille : une note que tu tiens au-delà d'une mesure voit son écho écourté — y compris tenue à la pédale par-dessus une barre de mesure.
 
 ### Accords
 Les notes jouées dans une courte fenêtre (30 ms par défaut) comptent pour un seul événement, daté sur la première, avec leur étalement affiché à côté — ainsi un accord ne ressemble pas à une série d'erreurs de placement distinctes. Règle la fenêtre à 0 pour compter chaque note séparément ; baisse-la si tu travailles des notes répétées rapides plutôt que des accords.
