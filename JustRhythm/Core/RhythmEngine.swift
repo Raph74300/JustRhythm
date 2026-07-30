@@ -196,6 +196,17 @@ final class RhythmEngine {
         clockBpm != nil ? settings.syncAlignmentMs : settings.manualAlignmentMs
     }
 
+    /// Laquelle des deux corrections est concernée, pour l'affichage.
+    ///
+    /// En séance, c'est l'horloge réellement reçue qui décide — comme pour la
+    /// correction elle-même. À l'arrêt il n'en arrive aucune, et la condition
+    /// resterait donc figée sur « iPhone » alors même qu'on bascule le réglage
+    /// de synchro sous ses yeux : on montre alors ce qui *s'appliquera*, à
+    /// défaut de ce qui s'applique.
+    var alignmentFollowsClock: Bool {
+        running ? clockBpm != nil : settings.syncStart
+    }
+
 
     /// Une surcharge ne se signale qu'une fois par séance : la répéter
     /// noierait le message utile sous sa propre répétition.

@@ -201,10 +201,10 @@ struct SettingsView: View {
             }
 
             correctionRow("iPhone clock", value: s.manualAlignmentMs,
-                          active: engine.clockBpm == nil) { s.manualAlignmentMs = $0 }
+                          active: !engine.alignmentFollowsClock) { s.manualAlignmentMs = $0 }
 
             correctionRow("Keyboard clock", value: s.syncAlignmentMs,
-                          active: engine.clockBpm != nil) { s.syncAlignmentMs = $0 }
+                          active: engine.alignmentFollowsClock) { s.syncAlignmentMs = $0 }
 
             Button("Test the sound") { engine.testClick() }
         } header: {
@@ -223,9 +223,9 @@ struct SettingsView: View {
             } label: {
                 HStack(spacing: 6) {
                     Text(title)
-                    // Le repère dit laquelle est en vigueur à l'instant : sans
-                    // lui, deux valeurs voisines n'apprendraient rien de plus
-                    // qu'une seule, et il faudrait deviner. (EX-117 : jamais la
+                    // Le repère dit laquelle est concernée : sans lui, deux
+                    // valeurs voisines n'apprendraient rien de plus qu'une
+                    // seule, et il faudrait deviner. (EX-117 : jamais la
                     // couleur seule — c'est un symbole doublé d'un libellé.)
                     if active {
                         Label("in force", systemImage: "checkmark.circle.fill")

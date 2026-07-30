@@ -81,11 +81,6 @@ struct MainView: View {
 
             VStack {
                 HStack {
-                    Text(compactValue)
-                        .font(.system(.title, design: .rounded, weight: .medium))
-                        .monospacedDigit()
-                        .foregroundStyle(currentTint)
-                        .contentTransition(.numericText())
                     Spacer()
                     Text(String(format: NSLocalizedString("%d bpm · %@", comment: ""),
                                Int(engine.settings.bpm), engine.settings.subdivision.shortLabel))
@@ -146,48 +141,16 @@ struct MainView: View {
                 .foregroundStyle(currentTint)
                 .contentTransition(.opacity)
                 .animation(.easeOut(duration: 0.25), value: verdict)
-
-            // La valeur chiffrée reste utile — pour régler l'alignement,
-            // notamment — mais elle n'a plus à être ce qu'on regarde en
-            // jouant : les barres le disent plus vite.
-            Text(displayValue)
-                .font(.caption)
-                .monospacedDigit()
-                .foregroundStyle(.secondary)
-                .contentTransition(.numericText())
-                .animation(.easeOut(duration: 0.25), value: engine.recentPlacement)
-
-            // Pour un accord, l'étalement compte autant que le placement.
-            // Ligne toujours présente pour que la hauteur ne saute pas. (EX-037)
-            Text(chordDetail ?? " ")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-                .monospacedDigit()
         }
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .combine)
     }
 
-    private var chordDetail: String? {
-        guard let hit = engine.hits.last, hit.notes.count > 1 else { return nil }
-        return String(format: NSLocalizedString("%d notes · spread %d ms", comment: ""),
-                      hit.notes.count, Int((hit.spread * 1000).rounded()))
-    }
 
     // Tout ce bloc lit la fourchette glissante, et non l'écart de la dernière
     // note : celui-ci change à chaque frappe, au point d'être illisible en
     // jouant. (EX-066)
 
-    /// La moyenne seule, et non la fourchette complète : la dispersion figure
-    /// déjà dans la rangée de statistiques, et deux nombres accolés sous le
-    /// verdict se lisaient mal en jouant.
-    private var displayValue: String {
-        guard let placement = engine.recentPlacement else { return "–" }
-        let ms = Int((placement.mean * 1000).rounded())
-        return "\(ms > 0 ? "+" : (ms < 0 ? "−" : ""))\(abs(ms)) ms"
-    }
-
-    private var compactValue: String { displayValue }
 
     private var currentTint: Color {
         guard let placement = engine.recentPlacement else { return .secondary }
@@ -380,8 +343,7 @@ struct StatsGrid: View {
             cell(String(localized: "Dispersion"),
                  value: hasData ? String(format: "%.1f", engine.stats.sd * 1000) : "–",
                  unit: hasData ? "ms" : nil,
-                 tint: dispersionTint,
-                 caption: hasData ? String(format: "%.1f %%", ratio) : nil)
+                 tint: dispersionTint)
             divider
             cell(String(localized: "In the zone"),
                  value: hasData ? "\(Int(engine.stats.inZone))" : "–",
@@ -403,9 +365,6 @@ struct StatsGrid: View {
         return String(format: NSLocalizedString("%d kept", comment: ""), engine.stats.count)
     }
 
-    /// Dispersion rapportée à l'intervalle : comparable d'un tempo à l'autre,
-    /// contrairement à la valeur en millisecondes. (EX-082)
-    private var ratio: Double { step > 0 ? engine.stats.sd / step * 100 : 0 }
 
     /// Vert tant que la dispersion reste acceptable, orange au-delà.
     private var dispersionTint: Color {
