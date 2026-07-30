@@ -62,6 +62,65 @@ Supported MIDI input: USB MIDI devices (including USB-MIDI interfaces)
 
 ---
 
+## What's New in This Version (champ réel, 4000 caractères max — obligatoire pour une mise à jour)
+
+> À coller dans « Nouveautés » de la fiche 2.5. La version publiée est la 1.0, qui
+> correspond à l'état v2.1 du cahier des charges : ce texte couvre donc v2.2 à v2.5,
+> suppressions comprises.
+
+### English
+
+Your notes, now played by the iPhone.
+
+The app can voice everything you play — piano, electric piano, harpsichord, acoustic guitar or marimba. Your notes and the metronome click then leave the same speaker by the same path, so where a note falls is something you hear rather than read. Turn Local Control off on your instrument and the iPhone becomes its voice. Full 88-key range, 64 voices, sustain pedal followed.
+
+On accurate hits it can do one thing more: add a note an octave up, or keep silent everything that misses the zone. A confirmation that arrives in the time of playing — usable with your eyes closed.
+
+A readout you can take in at a glance.
+
+The last note's error jumped around too much to steer by. Three tuner-style lights replace it, fed by your last 16 notes — their centre and their spread. Each side lights on its own, so rushing steadily reads differently from playing scattered but centred on the beat. An average alone would have called the second one perfect.
+
+Accuracy that means the same thing at every tempo.
+
+The "right" zone is now a share of the grid rather than a fixed number of milliseconds: 50 ms is nothing on a slow quarter note and a great deal on a fast sixteenth. Open it up to 30 % for a beginner or a fine grid — widening it changes the green band and the percentage, never the measurement underneath.
+
+Sync that holds.
+
+Following your keyboard's MIDI clock no longer drifts. A tempo changed on the instrument is picked up within a beat and kept afterwards. And if a Start message arrives with no clock behind it, the app says so instead of quietly running at its own tempo.
+
+Alignment is handled for you: one correction for the app's own clock, one for the keyboard's, and the app applies whichever fits — the input chain really is longer when an instrument transmits clock.
+
+Fixes: the note counter no longer freezes; your keyboard is found again on every scan instead of being locked out by a fallback; dense playing no longer leaves the graph behind.
+
+Removed: the note echoed back to the instrument on an accurate hit, replaced by the iPhone voicing your notes. It relied on settings inside the keyboard — Local Control, MIDI echo — that the app could neither read nor correct, and it behaved differently on every instrument. Bar accents are gone too: MIDI carries no time signature, so the setting could contradict the music you were playing.
+
+### Français
+
+Tes notes, jouées par l'iPhone.
+
+L'application peut sonoriser tout ce que tu joues — piano, piano électrique, clavecin, guitare acoustique ou marimba. Tes notes et le clic du métronome sortent alors du même haut-parleur par le même chemin : où tombe une note devient quelque chose qui s'entend, et non qui se lit. Coupe le Local Control sur ton instrument et l'iPhone devient sa voix. Toute la tessiture d'un 88 touches, 64 voix, pédale forte suivie.
+
+Quand la frappe est juste, il peut faire une chose de plus : ajouter une note à l'octave, ou étouffer tout ce qui manque la zone. Une confirmation qui arrive dans le temps du jeu — utilisable les yeux fermés.
+
+Une lecture qui se prend d'un coup d'œil.
+
+L'écart de la dernière note sautait trop d'une frappe à l'autre pour qu'on puisse s'y fier. Trois voyants façon accordeur le remplacent, alimentés par tes 16 dernières notes — leur centre et leur étalement. Chaque côté s'allume séparément : précipiter régulièrement ne se lit pas comme jouer dispersé mais centré sur le temps. Une moyenne seule aurait déclaré le second parfait.
+
+Une justesse qui veut dire la même chose à tous les tempos.
+
+La zone « juste » s'exprime désormais en part de la grille et non en millisecondes fixes : 50 ms ne sont rien sur une noire lente et beaucoup sur une double-croche rapide. Ouvre-la jusqu'à 30 % pour un débutant ou une grille fine — l'élargir change la bande verte et le pourcentage, jamais la mesure en dessous.
+
+Une synchro qui tient.
+
+Le suivi de l'horloge MIDI de ton clavier ne dérive plus. Un tempo changé sur l'instrument est repris en un temps et conservé ensuite. Et si un message Start arrive sans horloge derrière, l'application le dit au lieu de continuer discrètement à son propre tempo.
+
+L'alignement est pris en charge : une correction pour l'horloge de l'application, une pour celle du clavier, et c'est elle qui applique la bonne — la chaîne d'entrée est réellement plus longue quand un instrument transmet son horloge.
+
+Corrections : le compteur de notes ne se fige plus ; ton clavier est retrouvé à chaque balayage au lieu d'être écarté par un repli ; le jeu dense ne laisse plus le graphe en arrière.
+
+Retiré : la note renvoyée à l'instrument quand la frappe était juste, remplacée par la sonorisation sur l'iPhone. Elle dépendait de réglages internes au clavier — Local Control, renvoi MIDI — que l'application ne pouvait ni lire ni corriger, et se comportait différemment sur chaque instrument. Les accents de mesure disparaissent aussi : le MIDI ne transmet pas de métrique, si bien que le réglage pouvait contredire la musique jouée.
+
+
 ## Keywords (champ réel, 100 caractères max, séparés par virgules sans espace)
 
 ```
