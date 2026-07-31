@@ -162,9 +162,21 @@ struct SettingsView: View {
             // l'écran de mesure, derrière cette feuille — invisible au moment
             // précis où elle servirait.
             if let message = engine.message {
-                Label(message, systemImage: "exclamationmark.triangle")
-                    .foregroundStyle(.secondary)
-                    .font(.footnote)
+                // Ici la place ne manque pas : le détail est donné d'emblée,
+                // sans le repli qu'impose l'écran de mesure. (EX-135)
+                Label {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(message.summary)
+                        if let detail = message.detail {
+                            Text(detail).foregroundStyle(.tertiary)
+                        }
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
+                } icon: {
+                    Image(systemName: message.severity.icon)
+                }
+                .foregroundStyle(.secondary)
+                .font(.footnote)
             }
         } header: {
             Text("Instrument")

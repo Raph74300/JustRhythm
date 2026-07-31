@@ -8,6 +8,16 @@ and this project aligns its version numbers with the requirements document
 
 ## [Unreleased]
 
+## [2.7] — 2026-07-31
+
+### Changed
+- **Messages arrive in two parts** — The bar at the bottom of the measuring screen used to show the whole explanation at once, and cut it off at the first line: all that was left was the start of a sentence and an ellipsis. Each message now carries a one-line summary and, separately, the paragraph that tells you what to do. The bar shows the summary — never truncated, it wraps rather than cuts at large text sizes — and a tap unfolds the rest. The explanations stay long on purpose: the one about a missing MIDI clock points at a setting that lives on the instrument, not in the app, and that sentence is what saves you looking in the wrong place. They simply no longer sit four lines deep at the bottom of the screen while you play. (EX-135)
+- **A message can be dismissed, and dies with its session** — A cross clears it. Stopping the session clears it too: the missing-clock warning used to survive the session, then the whole time you were not playing, until the next start — describing a situation that no longer existed, with no way to be rid of it. (EX-135)
+- **Full-screen mode hides the navigation bar** — The title and the gear survived the switch to full screen. EX-072 asked for everything else to be hidden, status bar included; the criterion was written, it was simply not met. Upright it went unnoticed; on its side those 44 points come out of a total height of about 400. (EX-072)
+
+### Added
+- **Landscape in full-screen mode** — For laying the phone across the music stand. Full screen only: it shows nothing but the graph, whose canvas draws itself from whatever size it is given, while the standard layout — a 300-point graph, the statistics row and the whole transport — does not fit in the 390 to 430 points of a screen on its side. Leaving full screen returns to portrait on its own. A toggle button sits alongside automatic rotation, which does not fire while the system's rotation lock is on — and a phone propped on a music stand is exactly where you turn that lock on. (EX-136)
+
 ## [2.6] — 2026-07-31
 
 ### Changed

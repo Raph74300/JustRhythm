@@ -171,12 +171,33 @@
         }
       }
     },
+    "Audio output delayed by %d ms": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sortie audio en retard de %d ms"
+          }
+        }
+      }
+    },
     "Audio output delayed by %d ms — likely a wireless output, which will skew the average.": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
             "value": "Sortie audio en retard de %d ms — sortie sans fil probable, la moyenne sera faussée."
+          }
+        }
+      },
+      "extractionState": "stale"
+    },
+    "Audio unavailable": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Audio indisponible"
           }
         }
       }
@@ -189,7 +210,8 @@
             "value": "Audio indisponible : %@"
           }
         }
-      }
+      },
+      "extractionState": "stale"
     },
     "Automatic compensation": {
       "localizations": {
@@ -207,6 +229,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Moyenne"
+          }
+        }
+      }
+    },
+    "Back to portrait": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revenir en portrait"
           }
         }
       }
@@ -317,6 +349,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bois plus grave que les claves, moins agressif sur la durée."
+          }
+        }
+      }
+    },
+    "Dismiss the message": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fermer le message"
           }
         }
       }
@@ -432,6 +474,16 @@
         }
       }
     },
+    "Instrument unavailable": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Instrument indisponible"
+          }
+        }
+      }
+    },
     "Instrument unavailable: %@": {
       "localizations": {
         "fr": {
@@ -440,7 +492,8 @@
             "value": "Instrument indisponible : %@"
           }
         }
-      }
+      },
+      "extractionState": "stale"
     },
     "JustRhythm": {
       "comment": "The title of the app.",
@@ -482,6 +535,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dernière note"
+          }
+        }
+      }
+    },
+    "Likely a wireless output, which will skew the average.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sortie sans fil probable : la moyenne sera faussée."
           }
         }
       }
@@ -567,6 +630,16 @@
         }
       }
     },
+    "No MIDI clock is arriving": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucune horloge MIDI n'arrive"
+          }
+        }
+      }
+    },
     "No data leaves the device. No account, no audience measurement, no microphone access.": {
       "localizations": {
         "fr": {
@@ -607,6 +680,16 @@
         }
       }
     },
+    "Notes are being handled %d ms late": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes traitées avec %d ms de retard"
+          }
+        }
+      }
+    },
     "Notes are being handled %d ms late — the app is not keeping up with the incoming stream. Their measured timing stays correct, but they may scroll off the graph before they are drawn.": {
       "localizations": {
         "fr": {
@@ -615,7 +698,8 @@
             "value": "Les notes sont traitées avec %d ms de retard — l'application ne suit plus le flux entrant. Leur écart mesuré reste juste, mais elles peuvent sortir du graphe avant d'être dessinées."
           }
         }
-      }
+      },
+      "extractionState": "stale"
     },
     "Nothing in particular": {
       "localizations": {
@@ -741,6 +825,16 @@
         }
       }
     },
+    "Some sound was dropped": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du son a été abandonné"
+          }
+        }
+      }
+    },
     "Sound": {
       "localizations": {
         "fr": {
@@ -769,7 +863,8 @@
             "value": "Départ pris sur le message Start du clavier, mais aucune horloge MIDI n'arrive. Le tempo reste celui réglé ici et va dériver de ta boîte à rythmes — active la transmission de l'horloge sur l'instrument."
           }
         }
-      }
+      },
+      "extractionState": "stale"
     },
     "Statistics window": {
       "localizations": {
@@ -807,6 +902,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Synchronisation"
+          }
+        }
+      }
+    },
+    "Tap to read the details": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toucher pour lire le détail"
           }
         }
       }
@@ -861,12 +966,33 @@
         }
       }
     },
+    "The app is not keeping up with the incoming stream. Their measured timing stays correct, but they may scroll off the graph before they are drawn.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L'application ne suit plus le flux entrant. Leur écart mesuré reste juste, mais elles peuvent sortir du graphe avant d'être dessinées."
+          }
+        }
+      }
+    },
     "The audio engine fell behind and some sound was dropped. Timing measurements are unaffected.": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
             "value": "Le moteur audio a décroché et du son a été abandonné. La mesure des écarts n'est pas affectée."
+          }
+        }
+      },
+      "extractionState": "stale"
+    },
+    "The audio engine fell behind. Timing measurements are unaffected.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le moteur audio a décroché. La mesure des écarts n'est pas affectée."
           }
         }
       }
@@ -911,6 +1037,16 @@
         }
       }
     },
+    "The session started on the keyboard's Start message, but no clock follows it. The tempo stays the one set here and will drift apart from your drum machine — enable clock transmission on the instrument.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le départ a été pris sur le message Start du clavier, mais aucune horloge ne suit. Le tempo reste celui réglé ici et va dériver de ta boîte à rythmes — active la transmission de l'horloge sur l'instrument."
+          }
+        }
+      }
+    },
     "The sharpest attack of the five. The best choice for fine work and for setting the alignment.": {
       "localizations": {
         "fr": {
@@ -937,6 +1073,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Triolets"
+          }
+        }
+      }
+    },
+    "Turn to landscape": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Basculer en paysage"
           }
         }
       }
