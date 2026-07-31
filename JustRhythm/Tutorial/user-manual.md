@@ -55,6 +55,8 @@ Along the bottom, a **ruler in note values**: half the width is an eighth note, 
 
 **Tap the graph** for full-screen mode.
 
+Every note is measured on its own: there is no chord grouping. The notes of a chord therefore appear separately, and that is deliberate — you see at the same time whether the chord is *together*, which grouping would hide. It also stops a slightly overlapping legato from being swallowed.
+
 **Stats row**, below the graph:
 - **Notes** — how many you have played this session. It keeps counting for as long as you play. Once the statistics window starts discarding older notes, a small figure underneath says how many are still being kept — that is the sample the three figures beside it are based on
 - **Average** — your systematic bias: positive means you tend to drag, negative means you tend to rush
@@ -116,9 +118,6 @@ This only applies **while the metronome is running**: stopped, there is no accur
 
 Off by default.
 
-
-### Chords
-Notes played within a short window (default 30 ms) count as one event, timestamped on the first note, with their spread shown alongside it — so playing a chord doesn't look like several separate timing errors. Set the window to 0 to count every note individually; lower it if you're working on fast repeated single notes rather than chords.
 
 ### Alignment
 Two numbers are involved, and they act at **different points** — which matters for setting them correctly.

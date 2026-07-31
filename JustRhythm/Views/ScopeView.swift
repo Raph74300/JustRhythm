@@ -89,9 +89,7 @@ struct ScopeView: View {
             context.stroke(link, with: .color(Palette.grid.opacity(fade)), lineWidth: 0.5)
 
             let tint = Palette.tint(for: hit.delta, tolerance: engine.tolerance)
-            // Un accord est plus haut qu'une note seule : l'événement groupé
-            // doit rester identifiable d'un coup d'œil. (EX-036)
-            let half: CGFloat = hit.notes.count > 1 ? 10 : 7
+            let half: CGFloat = 7
             context.fill(
                 Path(roundedRect: CGRect(x: cx + dx - 2, y: y - half, width: 4, height: half * 2),
                      cornerRadius: 2),

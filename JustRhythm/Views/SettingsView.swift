@@ -25,11 +25,13 @@ struct SettingsView: View {
             Form {
                 keyboardSection
                 gridSection
+                // Ce qu'on retouche en changeant d'exercice vient en premier :
+                // la zone « juste » se règle bien plus souvent que l'alignement,
+                // qui ne se pose qu'une fois.
+                toleranceSection
                 syncSection
                 instrumentSection
-                chordSection
                 alignmentSection
-                toleranceSection
                 dataSection
                 aboutSection
             }
@@ -108,24 +110,6 @@ struct SettingsView: View {
             Text("Grid & sound")
         } footer: {
             Text(s.clickVoice.hint + String(localized: " The click only sounds on the beat, never on subdivisions."))
-        }
-    }
-
-    /// Regroupement d'accords. (EX-036 / EX-037)
-    private var chordSection: some View {
-        Section {
-            VStack(alignment: .leading, spacing: 6) {
-                LabeledContent("Chord window") {
-                    Text("\(Int(s.chordWindowMs)) ms").monospacedDigit()
-                }
-                Slider(value: Binding(get: { s.chordWindowMs },
-                                      set: { s.chordWindowMs = $0.rounded() }),
-                       in: 0...80, step: 5)
-            }
-        } header: {
-            Text("Chords")
-        } footer: {
-            Text("Notes arriving within this window count as one event, dated on the first. Lower it if you work fast repeated notes — a wide window swallows them.")
         }
     }
 

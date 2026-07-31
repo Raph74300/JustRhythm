@@ -6,8 +6,6 @@ struct Hit: Identifiable {
     let id = UUID()
     let time: Double        // instant retenu, en secondes host
     let delta: Double       // écart signé : < 0 en avance, > 0 en retard
-    var notes: [UInt8]      // toutes les notes du groupe (EX-036)
-    var spread: Double      // étalement du groupe, en secondes (EX-037)
 }
 
 struct Beat: Identifiable {
@@ -105,7 +103,6 @@ final class RhythmEngine {
     /// Compté à part : `deltas` est plafonné par la fenêtre glissante et ne
     /// peut donc pas servir à savoir combien de notes ont été jouées.
     private var notesPlayed = 0
-    private var openGroup: (index: Int, start: Double)?
     private var timer: DispatchSourceTimer?
 
     // — Suivi de l'horloge MIDI (EX-054) —
@@ -274,7 +271,7 @@ final class RhythmEngine {
             : nil
 
         hits.removeAll(); beats.removeAll(); deltas.removeAll()
-        lastDelta = nil; stats = Stats(); openGroup = nil; notesPlayed = 0
+        lastDelta = nil; stats = Stats(); notesPlayed = 0
         overloadReported = false
 
         externallyTriggered = externalStart != nil
@@ -614,19 +611,9 @@ final class RhythmEngine {
             self.midi.lastNote = NoteName.of(note)
             guard self.running else { return }
 
-            // Regroupement d'accord : les notes reçues dans une fenêtre courte
-            // comptent pour un seul événement, daté sur la première. (EX-036)
-            let window = self.settings.chordWindowMs / 1000
-            if window > 0, let group = self.openGroup,
-               time - group.start < window, group.index < self.hits.count {
-                self.hits[group.index].notes.append(note)
-                self.hits[group.index].spread = time - group.start   // (EX-037)
-                return
-            }
 
-            self.hits.append(Hit(time: corrected, delta: delta, notes: [note], spread: 0))
+            self.hits.append(Hit(time: corrected, delta: delta))
             if self.hits.count > 400 { self.hits.removeFirst(self.hits.count - 400) }
-            self.openGroup = (index: self.hits.count - 1, start: time)
 
 
             self.deltas.append(delta)
@@ -723,7 +710,7 @@ final class RhythmEngine {
     }
 
     func resetStats() {                                    // (EX-085)
-        hits.removeAll(); deltas.removeAll(); openGroup = nil
+        hits.removeAll(); deltas.removeAll()
         lastDelta = nil
         notesPlayed = 0
         stats = Stats()
@@ -737,8 +724,7 @@ final class RhythmEngine {
         let samples: [Double] = [-0.031, 0.012, -0.008, 0.024, -0.017,
                                   0.005, 0.038, -0.002, 0.019, -0.011]
         hits = samples.enumerated().map { i, d in
-            Hit(time: now - Double(samples.count - i) * 0.45, delta: d,
-                notes: [UInt8(60 + i)], spread: 0)
+            Hit(time: now - Double(samples.count - i) * 0.45, delta: d)
         }
         beats = (0..<8).map { Beat(time: now - Double($0) * 0.75, isMain: true) }
         deltas = samples

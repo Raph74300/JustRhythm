@@ -241,26 +241,6 @@
         }
       }
     },
-    "Chord window": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fenêtre d'accord"
-          }
-        }
-      }
-    },
-    "Chords": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Accords"
-          }
-        }
-      }
-    },
     "Claves": {
       "localizations": {
         "fr": {
@@ -633,16 +613,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Les notes sont traitées avec %d ms de retard — l'application ne suit plus le flux entrant. Leur écart mesuré reste juste, mais elles peuvent sortir du graphe avant d'être dessinées."
-          }
-        }
-      }
-    },
-    "Notes arriving within this window count as one event, dated on the first. Lower it if you work fast repeated notes — a wide window swallows them.": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Les notes reçues dans cette fenêtre comptent pour un seul événement, daté sur la première. Baisse-la si tu travailles des notes répétées rapides : une fenêtre large les avale."
           }
         }
       }

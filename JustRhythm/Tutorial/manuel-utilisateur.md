@@ -57,6 +57,8 @@ En bas, une **règle en valeurs de note** : la demi-largeur vaut une croche, le 
 
 **Touche le graphe** pour passer en plein écran.
 
+Chaque note est mesurée pour elle-même : il n'y a pas de regroupement d'accord. Les notes d'un accord apparaissent donc séparément, et c'est voulu — tu vois du même coup si l'accord est *ensemble*, ce qu'un regroupement masquerait. Cela évite aussi qu'un legato un peu chevauchant se fasse avaler.
+
 **Rangée de statistiques**, sous le graphe :
 - **Notes** — combien tu en as jouées depuis le début de la séance. Le compte continue de monter tant que tu joues. Dès que la fenêtre statistique commence à écarter les plus anciennes, un petit chiffre en dessous indique combien sont encore retenues : c'est l'échantillon sur lequel reposent les trois cases voisines
 - **Moyenne** — ton biais systématique : positif si tu traînes, négatif si tu précipites
@@ -118,9 +120,6 @@ Cela ne vaut que **métronome en marche** : à l'arrêt il n'y a pas de justesse
 
 Désactivé par défaut.
 
-
-### Accords
-Les notes jouées dans une courte fenêtre (30 ms par défaut) comptent pour un seul événement, daté sur la première, avec leur étalement affiché à côté — ainsi un accord ne ressemble pas à une série d'erreurs de placement distinctes. Règle la fenêtre à 0 pour compter chaque note séparément ; baisse-la si tu travailles des notes répétées rapides plutôt que des accords.
 
 ### Alignement
 Deux nombres interviennent, et ils n'agissent **pas au même endroit** — c'est important pour les régler juste.
