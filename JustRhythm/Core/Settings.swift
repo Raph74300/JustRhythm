@@ -91,12 +91,6 @@ final class Settings {
     var midiChannels: Set<Int> { didSet { store.set(Array(midiChannels), forKey: K.channels) } }
     /// (EX-018)
     var minVelocity: Int { didSet { store.set(minVelocity, forKey: K.minVel) } }
-    /// Fenêtre de regroupement d'accord, en ms. 0 = chaque note comptée seule. (EX-036)
-    var chordWindowMs: Double { didSet { store.set(chordWindowMs, forKey: K.chord) } }
-    /// Resserrement du graphe, de 0,25 à 1. À 1, il couvre exactement la
-    /// demi-subdivision — soit toute la plage qu'un écart peut atteindre,
-    /// ni plus (espace mort) ni moins (notes écrasées au bord). (EX-067)
-    var scaleZoom: Double { didSet { store.set(scaleZoom, forKey: K.scaleZoom) } }
     /// Nombre de notes retenues pour les statistiques. (EX-084)
     var statsWindow: Int { didSet { store.set(statsWindow, forKey: K.statsWin) } }
 
@@ -136,8 +130,6 @@ final class Settings {
         lastSourceID      = Int32(Self.int(K.source, 0))
         midiChannels      = Self.intSet(K.channels, [])
         minVelocity       = Self.int(K.minVel, 1)
-        chordWindowMs     = Self.double(K.chord, 30)
-        scaleZoom         = Self.double(K.scaleZoom, 1)
         statsWindow       = Self.int(K.statsWin, 200)
     }
 
@@ -153,8 +145,8 @@ final class Settings {
         static let accVoicing = "accVoicing"
         static let align = "align", syncAlign = "syncAlign"
         static let tolPct = "tolPct", source = "source"
-        static let channels = "channels", minVel = "minVel", chord = "chord"
-        static let scaleZoom = "scaleZoom", statsWin = "statsWin"
+        static let channels = "channels", minVel = "minVel"
+        static let statsWin = "statsWin"
     }
 }
 

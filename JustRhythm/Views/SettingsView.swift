@@ -25,11 +25,13 @@ struct SettingsView: View {
             Form {
                 keyboardSection
                 gridSection
+                // Ce qu'on retouche en changeant d'exercice vient en premier :
+                // la zone « juste » se règle bien plus souvent que l'alignement,
+                // qui ne se pose qu'une fois.
+                toleranceSection
                 syncSection
                 instrumentSection
-                chordSection
                 alignmentSection
-                toleranceSection
                 dataSection
                 aboutSection
             }
@@ -83,7 +85,7 @@ struct SettingsView: View {
             if engine.midi.sources.isEmpty {
                 Text("Connect the keyboard via USB. If it goes through an interface, make sure it's powered.")
             } else if engine.midi.selected?.isBluetooth == true {
-                Text("This source is Bluetooth: it adds 10 to 20 ms with variable jitter. The average will be skewed; regularity, though, stays accurate. Prefer USB.")
+                Text("Bluetooth adds 10 to 20 ms of variable delay. Your average will be skewed — your regularity stays accurate. Prefer USB.")
             } else {
                 Text("Play a note: it should appear above, even with the metronome stopped.")
             }
@@ -111,24 +113,6 @@ struct SettingsView: View {
         }
     }
 
-    /// Regroupement d'accords. (EX-036 / EX-037)
-    private var chordSection: some View {
-        Section {
-            VStack(alignment: .leading, spacing: 6) {
-                LabeledContent("Chord window") {
-                    Text("\(Int(s.chordWindowMs)) ms").monospacedDigit()
-                }
-                Slider(value: Binding(get: { s.chordWindowMs },
-                                      set: { s.chordWindowMs = $0.rounded() }),
-                       in: 0...80, step: 5)
-            }
-        } header: {
-            Text("Chords")
-        } footer: {
-            Text("Notes received within this window count as a single event, timestamped on the first one, and the app shows their spread. At 0, each note is counted separately. A wide window swallows fast repeated notes: lower it if you're working on rapid passages.")
-        }
-    }
-
     /// Synchronisation sur la boîte à rythmes du clavier. (EX-053 / EX-054)
     private var syncSection: some View {
         Section {
@@ -143,7 +127,7 @@ struct SettingsView: View {
         } header: {
             Text("Synchronization")
         } footer: {
-            Text("The metronome starts on your drum machine's Start message, and its grid is anchored exactly on that instant. It then follows the keyboard's MIDI clock to avoid drifting: the Start message gives the downbeat, not the tempo.")
+            Text("The metronome starts on your drum machine's Start message and then follows its MIDI clock. Start gives the downbeat, never the tempo — without a clock behind it, the two drift apart.")
         }
     }
 
@@ -186,8 +170,8 @@ struct SettingsView: View {
             Text("Instrument")
         } footer: {
             VStack(alignment: .leading, spacing: 8) {
-                Text("The iPhone plays every note it receives, with the timbre chosen here — the metronome click and your notes then come out of the same speaker, by the same path. Intended for playing with Local Control off on the instrument: leave it on and you will hear each note twice.")
-                Text("On accurate hits, the iPhone can add a note an octave up, or mute everything that misses the zone. This only applies while the metronome is running: stopped, there is no accuracy to judge and every note sounds.")
+                Text("Your notes and the click then come out of the same speaker, by the same path. Meant for playing with Local Control off on the instrument: leave it on and you hear every note twice.")
+                Text("The accuracy option applies only while the metronome runs: stopped, there is nothing to judge and every note sounds.")
             }
         }
     }
@@ -210,7 +194,7 @@ struct SettingsView: View {
         } header: {
             Text("Alignment")
         } footer: {
-            Text("The automatic compensation advances the click so it is heard on the beat rather than merely scheduled on it. The corrections below shift the timestamp of incoming notes instead, to cancel the input chain's delay — key scan, transport, buffering. They do not move the click: they only change the measurement.\n\nThere are two because the chain really is longer when the instrument transmits its clock: its real-time messages take priority in its output queue, so your keystrokes leave behind them. The app knows which case it is in and applies the right one — you never have to think about it while playing.\n\nNever set them by feel: you naturally anticipate by 10 to 30 ms without noticing, and you'd bake that bias into the device's zero point. Measure instead — record the key's mechanical thud and the iPhone's sound together, subtract the automatic compensation above from the interval, and enter the remainder as a negative value. Expect a few milliseconds on its own, around fifteen more with the clock running.")
+            Text("These shift the timestamp of incoming notes to cancel the input chain's delay. They never move the click. Two values, because the chain really is longer when the instrument transmits its clock — the app applies whichever fits.\n\nNever set them by feel: you anticipate by 10 to 30 ms without noticing, and you would write that bias into the zero. Measure them once; the manual gives the method.")
         }
     }
 
@@ -259,18 +243,6 @@ struct SettingsView: View {
                        in: 1...30, step: 1)
             }
 
-            // (EX-067)
-            VStack(alignment: .leading, spacing: 6) {
-                LabeledContent("Displayed scale") {
-                    Text(String(format: NSLocalizedString("%d %% · ± %d ms", comment: ""),
-                                Int((s.scaleZoom * 100).rounded()),
-                                Int((engine.gridPeriod / 2 * s.scaleZoom * 1000).rounded())))
-                        .monospacedDigit()
-                }
-                Slider(value: Binding(get: { s.scaleZoom },
-                                      set: { s.scaleZoom = ($0 * 20).rounded() / 20 }),
-                       in: 0.25...1, step: 0.05)
-            }
 
             // (EX-084)
             VStack(alignment: .leading, spacing: 6) {
@@ -284,7 +256,7 @@ struct SettingsView: View {
         } header: {
             Text("Measurement")
         } footer: {
-            Text("Both are expressed relative to the reference grid, because the same error in milliseconds doesn't mean the same thing on a slow quarter note as on a fast sixteenth.\n\nThe “right” zone sets the width of the green band and the basis for the percentage. It tightens on its own as the grid gets finer, but never goes below 20 ms — under that an error stops being audible, so demanding better would be arbitrary.\n\nOpen it up for a beginner, or for a fine grid: on sixteenths a tight zone asks for a precision nobody has starting out, and an indicator that is never green teaches nothing. It stops at 30 % because half a subdivision is where a note already belongs to the next grid step — a zone reaching that far would call everything accurate. Widening it changes only the green band, the percentage and the readout: the position of each note on the graph, the average and the dispersion stay exactly as measured.\n\nThe scale is capped at half a subdivision: past that point a note belongs to the next grid step, so there is nothing to show there. Lower it to zoom in; the measurement itself doesn't change. Since both follow the tempo, changing it mid-session also shifts the percentage already accumulated.\n\nThe statistics window limits the summary to the most recent notes, so a hesitant start to a session doesn't weigh it down indefinitely.")
+            Text("The graph is one beat wide, always — so what you see means the same at every subdivision. Grey is out of reach: a note further off belongs to the next grid step. Orange is what your grid can measure, green is the “right” zone, and the note values along the bottom read your error as an eighth, a sixteenth, a thirty-second.\n\nThe zone is a share of the grid rather than a fixed delay, and never narrower than 20 ms. Open it up for a beginner: widening it moves the green band and the percentage, never the measurement.\n\nThe statistics window keeps the summary on your recent notes.")
         }
     }
 
