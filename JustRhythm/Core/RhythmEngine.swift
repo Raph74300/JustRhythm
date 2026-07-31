@@ -184,6 +184,13 @@ final class RhythmEngine {
         Tolerance.limit(percent: settings.tolerancePercent, step: gridPeriod)
     }
 
+    /// Durée d'un temps, en secondes. C'est la largeur du graphe. (EX-067)
+    ///
+    /// Passe par `gridPeriod`, donc suit l'horloge du clavier quand elle est
+    /// reçue — et reste identique quelle que soit la subdivision, puisque
+    /// celle-ci divise le temps sans le changer.
+    var beatPeriod: Double { gridPeriod * Double(settings.subdivision.rawValue) }
+
     /// Correction d'entrée réellement appliquée. (EX-035)
     ///
     /// Deux valeurs, choisies par l'application et non par l'utilisateur. Quand

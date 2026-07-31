@@ -259,18 +259,6 @@ struct SettingsView: View {
                        in: 1...30, step: 1)
             }
 
-            // (EX-067)
-            VStack(alignment: .leading, spacing: 6) {
-                LabeledContent("Displayed scale") {
-                    Text(String(format: NSLocalizedString("%d %% · ± %d ms", comment: ""),
-                                Int((s.scaleZoom * 100).rounded()),
-                                Int((engine.gridPeriod / 2 * s.scaleZoom * 1000).rounded())))
-                        .monospacedDigit()
-                }
-                Slider(value: Binding(get: { s.scaleZoom },
-                                      set: { s.scaleZoom = ($0 * 20).rounded() / 20 }),
-                       in: 0.25...1, step: 0.05)
-            }
 
             // (EX-084)
             VStack(alignment: .leading, spacing: 6) {
