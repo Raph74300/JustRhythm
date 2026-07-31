@@ -39,7 +39,21 @@ That fourth state is why the reading tracks a *range* rather than a single avera
 
 Underneath, a word says the same thing in plain language — *on time*, *early*, *late*, *uneven*. Nothing else: this block is meant to be taken in at a glance without looking away from the keyboard, and a figure there would have to be read. The values live in the stats row, under **Average** and **Dispersion**.
 
-**Graph.** A vertical line down the center represents the beat. Time scrolls from top to bottom — the newest events are at the bottom, near the line. Each note you play appears as a short bar: on the line if you were exactly on time, to the left if early, to the right if late. A green band around the center marks your "right" zone — notes landing inside it count as accurate. The two edges of the graph are meaningful too: they sit exactly half a subdivision away from the beat, which is the point where a note stops being "late on this step" and becomes "early on the next one." Metronome beats scroll down too, as faint horizontal lines, so you can see how your notes line up with the pulse over time. **Tap the graph** to switch to full-screen mode — same graph, larger, with nothing else on screen.
+**Graph.** A vertical line down the centre represents the beat. Time scrolls from top to bottom: the newest events are at the top and fade as they descend. Each note appears as a short bar: on the line if you were exactly on time, left if early, right if late.
+
+Its width is **one beat, always** — whatever the subdivision. That is what makes it a ruler rather than a magnifier: two sessions can be compared, and there is no scale setting to watch.
+
+Three tints, from the outside in:
+
+- **Grey — out of reach.** No note can land there: any further off and it belongs to the next grid step. The amount of grey therefore tells you at a glance how demanding the grid you chose is. None on quarter notes, three quarters of the width on sixteenths.
+- **Orange — measurable, outside the zone.** This is the range your grid can judge.
+- **Green — the "right" zone.** Its width follows your tolerance setting, and the percentage below gives its value.
+
+A hairline marks each boundary, so the information never rests on colour alone.
+
+Along the bottom, a **ruler in note values**: half the width is an eighth note, a quarter a sixteenth, an eighth a thirty-second. You read your error as music — "late by a sixteenth" — rather than in milliseconds. In triplet mode the marks move to a third and a sixth of a beat, carrying a 3. Marks falling in the grey are dimmed: they exist, but your grid cannot reach them.
+
+**Tap the graph** for full-screen mode.
 
 **Stats row**, below the graph:
 - **Notes** — how many you have played this session. It keeps counting for as long as you play. Once the statistics window starts discarding older notes, a small figure underneath says how many are still being kept — that is the sample the three figures beside it are based on
@@ -65,6 +79,21 @@ Pick your keyboard if more than one is available, see the last note received, re
 
 ### Grid & sound
 Choose the subdivision your notes are judged against (quarter notes, eighth notes, triplets, sixteenths) and the metronome's click sound — five options, each with a short note on when it's the right choice (Claves is the sharpest attack and the best pick for calibrating alignment; Kick drum is felt more than heard and should never be used for that purpose).
+
+### Alignment — how to measure it
+
+Two corrections, "iPhone clock" and "Keyboard clock", and the app picks: the input chain really is longer when the instrument transmits its clock, its real-time messages taking priority over notes in its output queue. A marker shows which one is in force.
+
+Each is set **once, by measurement**. Never set them by feel: you naturally anticipate by 10 to 30 ms without noticing, and you would write that bias into the device's zero — after which the app could never contradict you again.
+
+The method:
+
+1. Record, in one file, the **mechanical thud of the key** and the **sound the iPhone makes** in reply. Put the microphone equidistant from both.
+2. Measure the interval between the two attacks — their *onset*, not their peak.
+3. Subtract the **automatic compensation** shown in Settings: that part is the audio output, already compensated elsewhere.
+4. Enter what remains as a **negative** value.
+
+Expect a few milliseconds for the chain alone, some fifteen more with the keyboard's clock running. Two known limits: the key's thud arrives slightly after the MIDI trigger, and key scan time stays unmeasurable without instrumenting the key itself.
 
 ### Synchronization
 **Synced start** — when your keyboard has a built-in drum machine or sequencer, turning this on makes JustRhythm start on its Start message instead of a fixed delay, and keep following its MIDI clock afterward so the two never drift apart. With it off, you start and stop manually as usual.

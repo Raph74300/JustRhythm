@@ -16,7 +16,7 @@ struct ScopeView: View {
 
     /// Hauteur réservée à la règle, en bas. Le défilement s'arrête au-dessus :
     /// une graduation lisible vaut mieux qu'une poignée de pixels de plus.
-    private let rulerHeight: CGFloat = 56
+    private let rulerHeight: CGFloat = 50
 
     var body: some View {
         TimelineView(.animation) { timeline in
@@ -166,6 +166,7 @@ struct ScopeView: View {
     private func drawRuler(_ context: GraphicsContext, cx: CGFloat, top: CGFloat,
                            width: CGFloat, scale: CGFloat, window: Double,
                            reachable: Double, tolerance: Double) {
+        _ = tolerance
         for mark in marks(beat: engine.beatPeriod,
                           ternary: engine.settings.subdivision == .triplet) {
             guard mark.offset <= window + 1e-9 else { continue }
@@ -183,25 +184,18 @@ struct ScopeView: View {
                 let label = min(max(x, 21), width - 21)
                 context.draw(Text(sign).font(.system(size: 11, weight: .semibold))
                                 .foregroundColor(tint),
-                             at: CGPoint(x: label - 9, y: top + 21))
-                note(context, at: CGPoint(x: label + 3, y: top + 26),
+                             at: CGPoint(x: label - 9, y: top + 20))
+                note(context, at: CGPoint(x: label + 3, y: top + 25),
                      flags: mark.flags, triplet: mark.triplet, color: tint)
             }
         }
 
-        // Accolade de la zone juste, et son pourcentage pour mémoire. (EX-063)
-        let w = tolerance * scale
-        let y = top + 38
-        var brace = Path()
-        brace.move(to: CGPoint(x: cx - w, y: y + 4))
-        brace.addLine(to: CGPoint(x: cx - w, y: y))
-        brace.addLine(to: CGPoint(x: cx + w, y: y))
-        brace.addLine(to: CGPoint(x: cx + w, y: y + 4))
-        context.stroke(brace, with: .color(Palette.onTime.opacity(0.7)), lineWidth: 1)
-
+        // Le chiffre seul, centré sous sa zone. L'accolade a été retirée : la
+        // bande verte montre déjà l'étendue sur toute la hauteur du graphe, et
+        // la redoubler d'un trait n'ajoutait rien qu'un ornement de plus.
         context.draw(Text(zoneLabel).font(.system(size: 10, weight: .medium))
-                        .foregroundColor(Palette.beatLine),
-                     at: CGPoint(x: cx, y: y + 12))
+                        .foregroundColor(Palette.onTime),
+                     at: CGPoint(x: cx, y: top + 42))
     }
 
     /// Le pourcentage réglé — sauf quand le plancher de 20 ms l'emporte, auquel

@@ -41,7 +41,21 @@ Ce quatrième état est la raison pour laquelle la lecture suit une *fourchette*
 
 En dessous, un mot dit la même chose en clair — *dans le temps*, *en avance*, *en retard*, *irrégulier*. Rien d'autre : ce bloc se consulte d'un coup d'œil sans quitter le clavier des yeux, et un chiffre y demanderait d'être lu. Les valeurs se trouvent dans la rangée de statistiques, sous **Moyenne** et **Dispersion**.
 
-**Le graphe.** Une ligne verticale centrale représente le temps. Le défilement va du haut vers le bas — les événements les plus récents sont en bas, près de la ligne. Chaque note apparaît sous forme de barre : sur la ligne si tu étais pile, à gauche en avance, à droite en retard. Une bande verte autour du centre matérialise ta zone « juste » — les notes qui y tombent comptent comme justes. Les deux bords du graphe ont un sens eux aussi : ils se situent exactement à une demi-subdivision du temps, c'est-à-dire là où une note cesse d'être « en retard sur ce pas » pour devenir « en avance sur le suivant ». Les temps du métronome défilent également, en traits horizontaux discrets, pour situer tes notes par rapport à la pulsation. **Touche le graphe** pour passer en plein écran : le même graphe, plus grand, avec le strict nécessaire.
+**Le graphe.** Une ligne verticale centrale représente le temps. Le défilement va du haut vers le bas : les événements les plus récents sont en haut, et s'estompent en descendant. Chaque note apparaît sous forme de barre : sur la ligne si tu étais pile, à gauche en avance, à droite en retard.
+
+Sa largeur vaut **un temps, toujours** — quelle que soit la subdivision. C'est ce qui en fait une règle plutôt qu'une loupe : deux séances se comparent, et tu n'as aucun réglage d'échelle à surveiller.
+
+Trois teintes, du dehors vers le dedans :
+
+- **Gris — hors d'atteinte.** Aucune note ne peut y tomber : au-delà, elle appartiendrait au pas de grille suivant. La part de gris te dit donc, d'un coup d'œil, à quel point la grille que tu as choisie est exigeante. Aucune en noires, les trois quarts de la largeur en doubles-croches.
+- **Orangé — mesurable, hors zone.** C'est la plage que ta grille sait juger.
+- **Vert — la zone « juste ».** Sa largeur suit ton réglage de tolérance, et le pourcentage rappelé en dessous en donne la valeur.
+
+Un filet marque chaque frontière, pour que l'information ne repose pas sur la couleur seule.
+
+En bas, une **règle en valeurs de note** : la demi-largeur vaut une croche, le quart une double-croche, le huitième une triple-croche. Tu lis donc ton écart en musique — « en retard d'une double-croche » — et non en millisecondes. En triolets, les repères passent au tiers et au sixième de temps, marqués d'un 3. Ceux qui tombent dans le gris sont estompés : ils existent, mais ta grille ne peut pas les atteindre.
+
+**Touche le graphe** pour passer en plein écran.
 
 **Rangée de statistiques**, sous le graphe :
 - **Notes** — combien tu en as jouées depuis le début de la séance. Le compte continue de monter tant que tu joues. Dès que la fenêtre statistique commence à écarter les plus anciennes, un petit chiffre en dessous indique combien sont encore retenues : c'est l'échantillon sur lequel reposent les trois cases voisines
@@ -67,6 +81,21 @@ Choisis ton clavier si plusieurs sont disponibles, vérifie la dernière note re
 
 ### Grille et son
 Choisis la subdivision sur laquelle tes notes sont jugées (noires, croches, triolets, doubles-croches) et le timbre du clic — cinq possibilités, chacune accompagnée d'une note sur le cas où elle convient (les claves ont l'attaque la plus nette et sont le meilleur choix pour l'étalonnage ; la grosse caisse se sent plus qu'elle ne s'entend et ne doit jamais servir à ça).
+
+### Alignement — la méthode de mesure
+
+Deux corrections, « Horloge de l'iPhone » et « Horloge du clavier », et c'est l'application qui choisit : la chaîne d'entrée est réellement plus longue quand l'instrument transmet son horloge, ses messages temps réel passant devant les notes dans sa file de sortie. Un repère indique celle qui s'applique.
+
+Chacune se règle **une fois, par la mesure**. Ne les règle jamais au ressenti : on anticipe naturellement de 10 à 30 ms sans s'en apercevoir, et tu inscrirais ce défaut dans le zéro de l'appareil — l'application ne pourrait plus jamais te contredire.
+
+La méthode :
+
+1. Enregistre au micro, dans un même fichier, le **choc mécanique de la touche** et le **son que l'iPhone produit** en réponse. Place le micro à égale distance des deux.
+2. Mesure l'écart entre les deux attaques — leur *début*, pas leur pic.
+3. Retire de cet écart la **compensation automatique** affichée dans les Réglages : elle correspond à la sortie audio, déjà compensée par ailleurs.
+4. Reporte le reste **en négatif**.
+
+Compte quelques millisecondes pour la chaîne seule, une quinzaine de plus avec l'horloge du clavier. Deux limites connues : le boum de la touche arrive légèrement après le déclenchement MIDI, et le balayage du clavier reste non mesurable sans instrumenter la touche elle-même.
 
 ### Synchronisation
 **Démarrage synchronisé** — si ton clavier possède une boîte à rythmes ou un séquenceur, ce réglage fait partir JustRhythm sur son message Start plutôt qu'après un délai fixe, puis suit son horloge MIDI pour que les deux ne dérivent jamais l'un par rapport à l'autre. Désactivé, tu démarres et arrêtes à la main comme d'habitude.
