@@ -8,6 +8,18 @@ and this project aligns its version numbers with the requirements document
 
 ## [Unreleased]
 
+## [2.6] — 2026-07-31
+
+### Changed
+- **The graph is a ruler now, one beat wide** — Its width no longer follows the subdivision, so what you see means the same thing at every grid. One beat is exactly the widest deviation a note can reach, so the frame is neither arbitrary nor too large. Three zones: grey out of reach — a note further off belongs to the next grid step — orange measurable, green the "right" zone, each boundary marked by a hairline so the meaning never rests on colour alone. The share of grey therefore reads the demand of your grid without a single figure: none on quarter notes, three quarters of the width on sixteenths. Reported after hours of playing: "it feels like I missed completely, when we are talking about −20 ms". (EX-067)
+- **A ruler in note values** — Along the bottom, half the width is an eighth note, a quarter a sixteenth, an eighth a thirty-second; in triplet mode a third and a sixth of a beat, marked with a 3. Marks out of reach are dimmed. You read your error as music — "late by a sixteenth" is something you can correct, "late by 47 ms" is not. The glyphs are drawn rather than typed: Unicode has no standalone thirty-second note, and the flag counts have to be told apart at a glance.
+- **Settings say less, the manual says more** — Every footer was cut to what you need at the moment you touch the setting; one still described a scale slider that no longer exists, another ran to three paragraphs. The detail moved to the user manual in both languages, including a step-by-step for measuring the alignment with a microphone. Measurement also moves up between Grid and Synchronization: the "right" zone gets retouched at every change of exercise, alignment gets set once.
+
+### Removed
+- **The scale slider** — A reference you can move is not a reference. The cost is real: on a fine grid the notes crowd into a quarter of the width, which is a true statement about what you asked for and still harder to read. (EX-067)
+- **Chord grouping** — Merging notes that arrived close together hid the thing worth seeing, whether a chord is actually together, and it absorbed the second note of any slightly overlapping legato — which is most legato played by a human. The measurement was losing exactly the notes an imperfect passage is made of. Every note is now measured on its own and their spread is read off the graph, which the fixed scale finally makes possible. (EX-036, EX-037 retired)
+- **The brace under the "right" zone** — It pointed the wrong way, and it repeated what the green band already shows over the full height. Only the percentage remains.
+
 ## [2.5] — 2026-07-30
 
 ### Added

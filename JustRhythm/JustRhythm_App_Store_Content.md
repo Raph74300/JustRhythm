@@ -64,8 +64,8 @@ Supported MIDI input: USB MIDI devices (including USB-MIDI interfaces)
 
 ## What's New in This Version (champ réel, 4000 caractères max — obligatoire pour une mise à jour)
 
-> À coller dans « Nouveautés » de la fiche 2.5. La version publiée est la 1.0, qui
-> correspond à l'état v2.1 du cahier des charges : ce texte couvre donc v2.2 à v2.5,
+> À coller dans « Nouveautés » de la fiche 2.6. La version publiée est la 1.0, qui
+> correspond à l'état v2.1 du cahier des charges : ce texte couvre donc v2.2 à v2.6,
 > suppressions comprises.
 
 ### English
@@ -75,6 +75,10 @@ Your notes, now played by the iPhone.
 The app can voice everything you play — piano, electric piano, harpsichord, acoustic guitar or marimba. Your notes and the metronome click then leave the same speaker by the same path, so where a note falls is something you hear rather than read. Turn Local Control off on your instrument and the iPhone becomes its voice. Full 88-key range, 64 voices, sustain pedal followed.
 
 On accurate hits it can do one thing more: add a note an octave up, or keep silent everything that misses the zone. A confirmation that arrives in the time of playing — usable with your eyes closed.
+
+A graph that shows you what is being asked.
+
+Its width is now one beat, whatever grid you choose — so what you see means the same thing every time. Grey marks what is out of reach, orange what your grid can measure, green the zone counted as accurate. On quarter notes there is no grey at all; on sixteenths it takes three quarters of the width. You can see, without reading a number, how demanding the setting you picked really is. Along the bottom, note values give your error in eighths, sixteenths and thirty-seconds rather than milliseconds.
 
 A readout you can take in at a glance.
 
@@ -101,6 +105,10 @@ Tes notes, jouées par l'iPhone.
 L'application peut sonoriser tout ce que tu joues — piano, piano électrique, clavecin, guitare acoustique ou marimba. Tes notes et le clic du métronome sortent alors du même haut-parleur par le même chemin : où tombe une note devient quelque chose qui s'entend, et non qui se lit. Coupe le Local Control sur ton instrument et l'iPhone devient sa voix. Toute la tessiture d'un 88 touches, 64 voix, pédale forte suivie.
 
 Quand la frappe est juste, il peut faire une chose de plus : ajouter une note à l'octave, ou étouffer tout ce qui manque la zone. Une confirmation qui arrive dans le temps du jeu — utilisable les yeux fermés.
+
+Un graphe qui montre ce qu'on te demande.
+
+Sa largeur vaut désormais un temps, quelle que soit la grille choisie — ce que tu vois veut donc dire la même chose à chaque fois. Le gris marque ce qui est hors d'atteinte, l'orangé ce que ta grille sait mesurer, le vert la zone comptée comme juste. En noires il n'y a pas de gris du tout ; en doubles-croches il occupe les trois quarts de la largeur. Tu vois donc, sans lire un chiffre, à quel point le réglage que tu as choisi est exigeant. En bas, des valeurs de note donnent ton écart en croches, doubles-croches et triples-croches plutôt qu'en millisecondes.
 
 Une lecture qui se prend d'un coup d'œil.
 
