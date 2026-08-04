@@ -259,15 +259,10 @@ struct SettingsView: View {
             }
 
 
-            // (EX-084)
-            VStack(alignment: .leading, spacing: 6) {
-                LabeledContent("Statistics window") {
-                    Text("\(s.statsWindow) notes").monospacedDigit()
-                }
-                Slider(value: Binding(get: { Double(s.statsWindow) },
-                                      set: { s.statsWindow = Int(($0 / 10).rounded() * 10) }),
-                       in: 20...1000, step: 10)
-            }
+            // La fenêtre statistique est masquée avec les chiffres qu'elle
+            // dimensionne : elle ne pilotait plus rien de visible, exactement
+            // comme le bouton d'effacement. Le réglage continue d'exister et de
+            // se conserver ; il redeviendra utile avec l'export. (EX-084)
         } header: {
             Text("Measurement")
         } footer: {

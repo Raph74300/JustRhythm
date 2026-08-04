@@ -924,7 +924,8 @@
             "value": "Fenêtre statistique"
           }
         }
-      }
+      },
+      "extractionState": "stale"
     },
     "Stop": {
       "localizations": {

@@ -39,19 +39,19 @@ You immediately see:
 
 - if you're rushing
 - if you're dragging
-- how many milliseconds you're off
-- your consistency over time
+- exactly where each note fell against the beat, read as music — late by a sixteenth, not late by 47 ms
+- whether your playing is steady or scattered
 
 Audio feedback goes further too. The iPhone can voice your notes itself, with a piano, electric piano, harpsichord, acoustic guitar or marimba sound: your playing and the metronome then come out of the same speaker, with nothing to correct between them. And when a hit lands in time it can add a note an octave up, or keep silent everything that misses — a confirmation that arrives in the time of playing rather than after it.
 
 After a few weeks of training, your playing naturally becomes more precise, more stable, and more in the groove. You'll play more easily with a drummer or other musicians, and your music will gain cohesion, energy, and impact.
 
 Key features:
-- Customizable metronome
+- Customizable metronome, with separate volumes for the click and for the notes
 - Real-time rhythmic placement analysis
-- Millisecond deviation measurement
-- Visual precision indicator
-- Play consistency analysis
+- Millisecond-accurate measurement, shown as a scrolling graph one beat wide
+- A ruler in note values, so you read your error as music
+- Landscape layout: graph on the left, controls under your hand on the right
 - Audio feedback when perfectly locked in
 - Training tool for all instruments
 
@@ -64,9 +64,15 @@ Supported MIDI input: USB MIDI devices (including USB-MIDI interfaces)
 
 ## What's New in This Version (champ réel, 4000 caractères max — obligatoire pour une mise à jour)
 
-> À coller dans « Nouveautés » de la fiche 2.6. La version publiée est la 1.0, qui
-> correspond à l'état v2.1 du cahier des charges : ce texte couvre donc v2.2 à v2.6,
+> À coller dans « Nouveautés » de la fiche 2.8. La version publiée est la 1.0, qui
+> correspond à l'état v2.1 du cahier des charges : ce texte couvre donc v2.2 à v2.8,
 > suppressions comprises.
+>
+> **À reprendre avant soumission.** Les paragraphes ci-dessous décrivent encore les
+> trois voyants d'accordeur et la rangée de statistiques, retirés en 2.8 : le mot seul
+> les remplace, et l'application est désormais entièrement en paysage. Deux ajouts à
+> faire dans les deux langues — l'orientation couchée avec le graphe en deux tiers de
+> largeur, et les volumes séparés du clic et de l'instrument.
 
 ### English
 
@@ -148,6 +154,7 @@ This app requires a MIDI keyboard connected via USB to function — it analyzes 
 
 ## Captures d'écran — recommandations
 
+- **Refaire les captures en paysage** — depuis la 2.8 l'application n'a plus de mode portrait, et toutes les captures existantes sont donc fausses
 - **Utiliser les captures de vraie séance** (notes affichées en temps réel, +11 ms / -3 ms visibles) plutôt qu'un écran vide — une capture publique doit montrer la valeur de l'app, pas l'absence de clavier
 - **Ne pas inclure l'état "No keyboard"** dans les captures publiques — utile uniquement en App Review Notes ou en QA interne
 - Si l'écran Settings est utilisé en capture, **flouter le nom d'appareil détecté** (ex. "CVP-303 Port 1") pour éviter toute implication de partenariat de marque non sollicité
@@ -159,7 +166,7 @@ This app requires a MIDI keyboard connected via USB to function — it analyzes 
 - [x] ~~Verify exact availability of JustRhythm name on App Store~~ — déjà fait, la fiche existe sous ce nom
 - [x] ~~Reserve domain name if necessary~~ — non applicable, convention Bundle ID `dev.oundjian.*` ne nécessite pas de domaine possédé
 - [ ] Confirmer le support réel de Bluetooth MIDI et Network MIDI avant de les mentionner publiquement
-- [ ] Préparer captures iPhone et iPad à partir d'une vraie séance de jeu
+- [ ] Préparer captures iPhone **en paysage** à partir d'une vraie séance de jeu (plus d'iPad, plus de portrait)
 - [ ] Flouter tout nom de marque d'appareil visible dans les captures Settings
 - [ ] Vérifier la conformité aux App Store Guidelines (fait dans le cadre du parcours de publication)
 - [ ] Icône et images de preview déjà prêtes (voir guide de publication)

@@ -11,6 +11,8 @@ JustRhythm measures how accurately you play in time. Connect a MIDI keyboard, st
   - **USB** — wired, the most accurate, no added latency
   - **Bluetooth** — a keyboard already paired in iOS Settings shows up automatically; adds 10–20 ms of variable jitter (see §3)
 
+The app is used **on its side**, either way round: the cable then comes out sideways instead of butting against the music stand. There is no portrait mode.
+
 No microphone permission is ever requested. JustRhythm only listens to MIDI.
 
 ---
@@ -18,7 +20,7 @@ No microphone permission is ever requested. JustRhythm only listens to MIDI.
 ## 2. Getting started
 
 1. Connect your keyboard (see above). Open JustRhythm — it remembers the last keyboard you used and reconnects automatically next time.
-2. Play a note. Its name (e.g. "C4") should appear at the bottom of the main screen — that confirms the connection works, even before you press Start.
+2. Play a note. Its name (e.g. "C4") should appear in the right-hand sidebar — that confirms the connection works, even before you press Start.
 3. Tap **Start** to begin the metronome. Play along; each note you play is scored the instant it happens.
 4. Tap **Stop** (or the same button) to end the session.
 
@@ -26,18 +28,13 @@ No microphone permission is ever requested. JustRhythm only listens to MIDI.
 
 ## 3. The main screen
 
-**Readout (top).** Three indicators, read like a guitar tuner: a triangle on each side and a bar in the middle. This is the thing to watch while you play.
+The screen reads in two columns: the graph takes the left two thirds, and the right third holds everything you touch while playing.
 
-- **Center bar green** — your playing fits inside the "right" zone. Nothing else is lit
-- **Left triangle** — you're running **early**
-- **Right triangle** — you're running **late**
-- **Both triangles** — your placement is **uneven**: centered on average, but scattered around the beat
+**Readout (above the graph).** One word, and only that — *on time*, *early*, *late*, *uneven*. It is centred on the graph's vertical line, directly above it: the two say the same thing on the same axis. Green inside the zone, orange outside, the colour only doubling the word.
 
-Like a tuner, the center only lights when you're actually on target — it's the state you're aiming for, not a permanent marker. The indicators stay faintly visible when off, so the target is identifiable before you've played a note.
+*Uneven* is the one worth understanding: it means centred on average but scattered around the beat. It is why the reading tracks a *range* rather than a single average. An average alone would hide it — a note 40 ms early and one 40 ms late cancel out, and the app would call sloppy playing perfect. What the word reflects is the range your recent notes are landing in: its centre *and* its width. And it follows your **last 16 notes**, not the last single one: one note's error jumps around too much from keystroke to keystroke to steer by — you'd be chasing noise.
 
-That fourth state is why the reading tracks a *range* rather than a single average. An average alone would hide it: a note 40 ms early and one 40 ms late cancel out, and the app would call sloppy playing perfect. What the indicators react to is the range your recent notes are landing in — its center *and* its width. And it follows your **last 16 notes**, not the last single one: one note's error jumps around too much from keystroke to keystroke to steer by — you'd be chasing noise.
-
-Underneath, a word says the same thing in plain language — *on time*, *early*, *late*, *uneven*. Nothing else: this block is meant to be taken in at a glance without looking away from the keyboard, and a figure there would have to be read. The values live in the stats row, under **Average** and **Dispersion**.
+Nothing else there, and not a figure: what you watch while playing has to register without being read.
 
 **Graph.** A vertical line down the centre represents the beat. Time scrolls from top to bottom: the newest events are at the top and fade as they descend. Each note appears as a short bar: on the line if you were exactly on time, left if early, right if late.
 
@@ -47,30 +44,26 @@ Three tints, from the outside in:
 
 - **Grey — out of reach.** No note can land there: any further off and it belongs to the next grid step. The amount of grey therefore tells you at a glance how demanding the grid you chose is. None on quarter notes, three quarters of the width on sixteenths.
 - **Orange — measurable, outside the zone.** This is the range your grid can judge.
-- **Green — the "right" zone.** Its width follows your tolerance setting, and the percentage below gives its value.
+- **Green — the "right" zone.** Its width follows your tolerance setting, and the percentage recalled on the ruler, among the pictograms, gives its value.
 
 A hairline marks each boundary, so the information never rests on colour alone.
 
 Along the bottom, a **ruler in note values**: half the width is an eighth note, a quarter a sixteenth, an eighth a thirty-second. You read your error as music — "late by a sixteenth" — rather than in milliseconds. In triplet mode the marks move to a third and a sixth of a beat, carrying a 3. Marks falling in the grey are dimmed: they exist, but your grid cannot reach them.
 
-**Tap the graph** for full-screen mode. There, and only there, you can lay the phone on its side: turn it, or tap the icon at the top left if iOS's rotation lock is on — which it often is on a phone propped up on a music stand. Portrait comes back on its own when you leave full screen.
+**Tap the graph** for full-screen mode: the sidebar clears away and the graph takes the whole width, right under the notch. Tempo and **Start/Stop** stay at the bottom right, under your thumb. Tap again to come back.
 
 Every note is measured on its own: there is no chord grouping. The notes of a chord therefore appear separately, and that is deliberate — you see at the same time whether the chord is *together*, which grouping would hide. It also stops a slightly overlapping legato from being swallowed.
 
-**Stats row**, below the graph:
-- **Notes** — how many you have played this session. It keeps counting for as long as you play. Once the statistics window starts discarding older notes, a small figure underneath says how many are still being kept — that is the sample the three figures beside it are based on
-- **Average** — your systematic bias: positive means you tend to drag, negative means you tend to rush
-- **Dispersion** — how scattered your notes are around your own average (a standard deviation, in ms), independent of the bias above. **Higher is worse**: 0 would mean every note falls in exactly the same place. It turns orange past the acceptable limit, which is the more forgiving of 5 % of the step and 15 ms
-- **In the zone** — the percentage of notes that landed inside your "right" zone
-
-**Transport bar**, at the bottom:
-- Keyboard name (or "No keyboard"), and — if synced start is on — whether the app is *waiting for Start* or already *synced* to your keyboard's drum machine
-- The current grid subdivision (e.g. "Quarter notes"), and the last note played
+**The right-hand sidebar** holds, top to bottom:
+- Keyboard name (or "No keyboard"), and the settings gear
+- If synced start is on, an indicator saying whether the app is *waiting for Start* or already *synced* to your keyboard's drum machine; then the grid subdivision (e.g. "Quarter notes") and the last note played
 - Tempo with **−**/**+** buttons and a slider (30–240 bpm). If the app is following your keyboard's MIDI clock, this shows the tempo it's receiving instead, and it stops being editable — the keyboard is in charge
 - **Start/Stop**
-- Click mute toggle and volume slider
+- Two separate volumes: the metronome **click**, and the **instrument**, meaning the notes the iPhone voices itself (§4). Each icon mutes and unmutes its own voice — a speaker for the click, a music note for the instrument, barred when silent. The click has to stay audible *under* your playing, and the right ratio depends on the timbre as much as on the piece: that is why they don't move together
 
-A message may appear just above the transport bar — e.g. a warning that your audio output is adding delay (typical with wireless speakers/headphones), or that no MIDI clock is following a synced start. It fits on one line: **tap it** to read the full explanation, which tells you what to do, and the cross to clear it. A message goes away anyway when you stop the session it describes.
+You will find no summary figures here — note count, average, dispersion. That is deliberate: this screen is for correcting the gesture in progress, and four figures describing what has just been played invite you to stop and read them. They come back the day the app can export a session.
+
+A message may appear across the bottom of the screen — e.g. a warning that your audio output is adding delay (typical with wireless speakers/headphones), or that no MIDI clock is following a synced start. It fits on one line: **tap it** to read the full explanation, which tells you what to do, and the cross to clear it. A message goes away anyway when you stop the session it describes.
 
 ---
 
@@ -136,16 +129,11 @@ Two numbers are involved, and they act at **different points** — which matters
 A **Test the sound** button plays an isolated click to check the audio chain without starting a session.
 
 ### Measurement
-The first two settings are expressed **relative to the reference grid**, not in fixed milliseconds — because the same error doesn't mean the same thing on a slow quarter note as on a fast sixteenth. Both show you the resulting value in ms for your current tempo, so you keep the concrete figure in view.
+This setting is expressed **relative to the reference grid**, not in fixed milliseconds — because the same error doesn't mean the same thing on a slow quarter note as on a fast sixteenth. It shows you the resulting value in ms for your current tempo, so you keep the concrete figure in view.
 
 - **"Right" zone** — how wide the accurate band is, as a percentage of the subdivision; sets both the green band on the graph and the "In the zone" percentage. It tightens on its own as the grid gets finer. It never goes below **20 ms**, though: under that an error stops being audible, so demanding better would be arbitrary. When that floor is what's actually in effect, the value reads `(min)` — on fine grids that's normal, and moving the percentage slider won't change anything until you go well above it.
-- **Displayed scale** — how wide the graph reads left-to-right, as a percentage of half a subdivision. At 100 % the graph covers exactly the range an error can reach: past half a subdivision, a note belongs to the *next* grid step instead, so there's nothing to show out there. Lower it to zoom in. Purely visual — it never changes what's measured.
-- **Statistics window** — how many of the most recent notes feed the stats, so a shaky start to a session doesn't drag down the whole average forever
 
-Because the first two follow the tempo, changing tempo or subdivision mid-session also shifts the "In the zone" percentage you've already accumulated.
-
-### Data
-**Clear statistics** resets the counters and the graph without stopping the metronome — useful to start a fresh read mid-session.
+Because the zone follows the tempo, changing tempo or subdivision mid-session also shifts which of your notes fall inside it.
 
 ### About
 App version, and a one-line reminder: no data ever leaves the device, no account, no analytics, no microphone access.
@@ -156,8 +144,8 @@ App version, and a one-line reminder: no data ever leaves the device, no account
 
 1. **Once and for all**: calibrate the manual correction with a quantized file (§4, Alignment). It depends on your hardware, not on the piece — no need to revisit it every session.
 2. Settings → turn on **Synced start** if you're playing along with the keyboard's drum machine.
-3. Play normally. Watch the indicators; the graph and stats fill in.
-4. For a clean read on a specific passage, use **Clear statistics** right before you start it.
+3. Play normally. Watch the word above the graph; the graph fills in beneath it.
+4. Tap the graph for full-screen mode whenever you want the finest possible resolution on your deviation.
 
 ---
 

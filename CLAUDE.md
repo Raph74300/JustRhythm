@@ -70,6 +70,19 @@ valeurs sont celles de ce clavier, pas des constantes :
   séquenceur joue mais présent quand l'instrumentiste joue. Quelques ms,
   hors de portée sans instrumentation externe.
 
+## Orientation et disposition
+
+Depuis la 2.8 l'application est **entièrement en paysage**, réglages compris —
+un câble, même coudé, bute contre le pupitre quand le téléphone est debout. Cela
+se déclare en une ligne dans le projet (`INFOPLIST_KEY_UISupportedInterfaceOrientations`) ;
+il n'y a ni `AppDelegate` ni masque d'orientation variable, et la tentative
+précédente qui n'ouvrait le paysage qu'au plein écran est tracée dans les
+décisions. L'écran de mesure est en deux colonnes, deux tiers / un tiers, sans
+`NavigationStack` : sa barre coûtait 44 des quelque 400 points de hauteur.
+
+**La hauteur est la dimension rare, la largeur celle qui porte la mesure.** Toute
+proposition d'ajout à cet écran se juge d'abord là-dessus.
+
 ## Pistes ouvertes
 
 Décisions prises mais pas encore appliquées, ou options écartées qui restent
@@ -84,10 +97,14 @@ rouvrables — à ne pas reproposer comme des nouveautés :
   désactive côté Mac (Configuration audio et MIDI → Réseau). Le correctif du
   repli de source la rend inoffensive ; le nettoyage reste à faire.
 - **Options écartées, rouvrables** : afficher le seuil dans la légende de
-  Dispersion (`5,3 % / limite 5 %`) pour expliquer l'orange ; ajouter des
-  chevrons au vu-mètre si l'absence d'ampleur finit par manquer — sans
-  revenir aux neuf barres, dont l'échec est tracé dans le journal.
-- **Export des données** (EX-088) : demandé puis reporté, toujours ouvert.
+  Dispersion (`5,3 % / limite 5 %`) pour expliquer l'orange. Ne pas reproposer
+  les voyants d'accordeur : essayés, puis retirés en 2.8 au profit du mot seul.
+- **Export des données** (EX-088) : toujours ouvert, et c'est devenu le point
+  de rendez-vous du reste. Les statistiques (EX-080 à EX-083, EX-085) et la
+  fenêtre statistique (EX-084) sont passées en phase 2 et ne s'affichent plus
+  nulle part : le moteur les calcule toujours, elles reviendront là.
+- **Captures de l'App Store** : toutes en portrait, donc fausses depuis la 2.8.
+  À refaire avant toute soumission.
 
 ## Reprendre après une perte de contexte
 
