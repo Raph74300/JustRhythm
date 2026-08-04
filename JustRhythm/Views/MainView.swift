@@ -341,12 +341,20 @@ struct MainView: View {
         .disabled(engine.settings.syncStart && !engine.running)
     }
 
-    /// Deux niveaux séparés. (EX-137)
+    /// Deux niveaux séparés, chacun avec sa coupure. (EX-137)
     ///
     /// Le clic et les notes ne se dosent pas ensemble : il faut que le clic
     /// reste audible *sous* le jeu, et le rapport juste dépend du timbre choisi
     /// autant que du morceau. Un curseur unique obligeait à choisir lequel des
-    /// deux on sacrifiait.
+    /// deux on sacrifiait — et un seul des deux pouvait se taire.
+    ///
+    /// L'icône du module bascule le même interrupteur que les Réglages, et non
+    /// une seconde notion de silence : deux façons d'être éteint pour une même
+    /// voix, c'est l'assurance qu'un jour l'une contredise l'autre.
+    ///
+    /// Note de musique et non touches de piano : `pianokeys` sert déjà d'un cran
+    /// plus haut à dire qu'un clavier MIDI est reconnu, et il n'en existe de
+    /// toute façon aucune variante barrée.
     private var volumes: some View {
         VStack(spacing: 8) {
             volumeRow(icon: engine.settings.clickEnabled
@@ -360,7 +368,8 @@ struct MainView: View {
                           ? String(localized: "Mute the click")
                           : String(localized: "Enable the click"))
 
-            volumeRow(icon: "pianokeys",
+            volumeRow(icon: engine.settings.instrumentEnabled
+                      ? "music.note" : "music.note.slash",
                       label: String(localized: "Instrument volume"),
                       value: Binding(get: { engine.settings.instrumentVolume },
                                      set: {
@@ -368,8 +377,17 @@ struct MainView: View {
                                          engine.instrumentVolumeChanged()
                                      }),
                       enabled: engine.settings.instrumentEnabled,
-                      iconAction: nil,
-                      iconHint: String(localized: "Instrument volume"))
+                      iconAction: {
+                          engine.settings.instrumentEnabled.toggle()
+                          // Le même appel que la bascule des Réglages : sans lui
+                          // les notes tenues continueraient de sonner après la
+                          // coupure, et le moteur audio resterait ouvert pour
+                          // personne.
+                          engine.instrumentSettingChanged()
+                      },
+                      iconHint: engine.settings.instrumentEnabled
+                          ? String(localized: "Mute the instrument")
+                          : String(localized: "Enable the instrument"))
         }
     }
 
@@ -377,7 +395,7 @@ struct MainView: View {
                            label: String,
                            value: Binding<Double>,
                            enabled: Bool,
-                           iconAction: (() -> Void)?,
+                           iconAction: @escaping () -> Void,
                            iconHint: String) -> some View {
         HStack(spacing: 10) {
             Image(systemName: icon)
@@ -385,8 +403,9 @@ struct MainView: View {
                 .foregroundStyle(.secondary)
                 .frame(width: 22)
                 .contentShape(Rectangle())
-                .onTapGesture { iconAction?() }
+                .onTapGesture { iconAction() }
                 .accessibilityLabel(iconHint)
+                .accessibilityAddTraits(.isButton)
 
             Slider(value: value, in: 0...1) { Text(label) }
                 .disabled(!enabled)
