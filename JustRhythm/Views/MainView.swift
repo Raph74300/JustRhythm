@@ -31,7 +31,7 @@ struct MainView: View {
     var body: some View {
         GeometryReader { geometry in
             HStack(spacing: 0) {
-                measurement
+                measurement(bottomInset: geometry.safeAreaInsets.bottom)
                     .frame(width: immersive
                            ? geometry.size.width
                            : geometry.size.width * (1 - Self.sidebarShare))
@@ -62,36 +62,44 @@ struct MainView: View {
     // Colonne de gauche : la mesure
     // =====================================================================
 
-    private var measurement: some View {
-        VStack(spacing: 12) {
-            if !immersive {
-                // Le Tuner touchait le haut de l'écran. C'est pourtant lui qu'on
-                // consulte le plus, et une commande collée au bord se lit mal
-                // autant qu'elle se touche mal.
-                readout.padding(.top, 8)
-            }
+    /// Bande réservée au mot, au-dessus du graphe — et la même, vide, en dessous.
+    ///
+    /// C'est ce qui centre le graphe : empilé, il était poussé vers le bas par
+    /// le seul bloc qui le précédait, avec cinquante-six points au-dessus et
+    /// trente-deux en dessous. Deux bandes égales le remettent d'aplomb, et le
+    /// mot flotte dans celle du haut plutôt que d'occuper une ligne à lui.
+    private static let readoutBand: CGFloat = 32
 
-            scope
-                .background(immersive ? Color.clear
-                            : Color(uiColor: .secondarySystemGroupedBackground))
-                .clipShape(RoundedRectangle(cornerRadius: immersive ? 0 : 12,
-                                            style: .continuous))
-                // Le graphe déborde jusqu'aux bords physiques en plein écran :
-                // couché, l'encoche mange une soixantaine de points sur un côté,
-                // et c'est la largeur qui porte la résolution de l'écart.
-                .ignoresSafeArea(edges: immersive ? .all : [])
-        }
-        .padding(.leading, immersive ? 0 : 16)
-        // Une gouttière côté bandeau : sans elle, le cadre du graphe venait
-        // buter contre les commandes.
-        .padding(.trailing, immersive ? 0 : 6)
-        .padding(.top, immersive ? 0 : 10)
-        .padding(.bottom, immersive ? 0 : 14)
-        // Posée sur la pile et non sur le graphe : les commandes, elles,
-        // doivent rester en deçà de l'encoche et de la barre d'accueil.
-        .overlay(alignment: .bottom) {
-            if immersive { immersiveControls }
-        }
+    private func measurement(bottomInset: CGFloat) -> some View {
+        scope
+            .background(immersive ? Color.clear
+                        : Color(uiColor: .secondarySystemGroupedBackground))
+            .clipShape(RoundedRectangle(cornerRadius: immersive ? 0 : 12,
+                                        style: .continuous))
+            // Le graphe déborde jusqu'aux bords physiques en plein écran :
+            // couché, l'encoche mange une soixantaine de points sur un côté, et
+            // c'est la largeur qui porte la résolution de l'écart.
+            .ignoresSafeArea(edges: immersive ? .all : [])
+            .padding(.top, immersive ? 0 : Self.readoutBand)
+            // La bande basse est amputée de la barre d'accueil. Sans cela le
+            // graphe serait centré dans la zone sûre mais pas sur le verre : la
+            // quinzaine de points qu'iOS réserve en bas est du vide comme un
+            // autre pour l'œil, et le cadre paraissait tomber trop bas.
+            .padding(.bottom, immersive ? 0 : max(0, Self.readoutBand - bottomInset))
+            .overlay(alignment: .top) {
+                if !immersive {
+                    readout.frame(height: Self.readoutBand)
+                }
+            }
+            .padding(.leading, immersive ? 0 : 16)
+            // Une gouttière côté bandeau : sans elle, le cadre du graphe venait
+            // buter contre les commandes.
+            .padding(.trailing, immersive ? 0 : 6)
+            // Posée en dehors du débordement : les commandes, elles, doivent
+            // rester en deçà de l'encoche et de la barre d'accueil.
+            .overlay(alignment: .bottom) {
+                if immersive { immersiveControls }
+            }
     }
 
     private var scope: some View {
@@ -136,20 +144,18 @@ struct MainView: View {
     // Lecture instantanée (EX-066)
     // =====================================================================
 
-    /// Les trois voyants seuls, d'aplomb sur le fil à plomb. (EX-066)
+    /// Le mot seul, centré sur le fil à plomb. (EX-066)
     ///
-    /// Le mot qui doublait les voyants — *dans le temps*, *en avance* — a été
-    /// retiré, et c'est ce qui permet le centrage. Posé à droite des voyants, il
-    /// poussait forcément la barre centrale à gauche du milieu : l'ensemble était
-    /// centré, la barre ne l'était pas. Elle tombe maintenant exactement sur la
-    /// ligne verticale du graphe, juste en dessous. Les deux ne disent plus la
-    /// même chose à deux endroits, ils disent la même chose sur le même axe.
-    ///
-    /// Le verdict n'est pas perdu pour autant : il devient la valeur
-    /// d'accessibilité de l'ensemble, seule façon de continuer à énoncer le
-    /// placement à qui ne voit pas les voyants.
+    /// Les trois voyants ont été retirés à leur tour : ils disaient la même
+    /// chose que le mot, en demandant qu'on apprenne à les lire. Le mot, lui, se
+    /// lit sans convention — et il tient sur moins de hauteur, ce qui en paysage
+    /// se compte.
     private var readout: some View {
-        BiasMeter(placement: engine.recentPlacement, tolerance: engine.tolerance)
+        Text(verdict)
+            .font(.title3.weight(.medium))
+            .foregroundStyle(currentTint)
+            .contentTransition(.opacity)
+            .animation(.easeOut(duration: 0.25), value: verdict)
             .frame(maxWidth: .infinity)
             .accessibilityElement()
             .accessibilityLabel(String(localized: "Placement"))
@@ -159,6 +165,13 @@ struct MainView: View {
     // Tout ce bloc lit la fourchette glissante, et non l'écart de la dernière
     // note : celui-ci change à chaque frappe, au point d'être illisible en
     // jouant. (EX-066)
+
+    /// Vert quand la fourchette entière tient dans la zone, orange sinon. La
+    /// couleur ne porte rien seule : c'est le mot qu'elle teinte. (EX-117)
+    private var currentTint: Color {
+        guard let placement = engine.recentPlacement else { return .secondary }
+        return placement.isWithin(engine.tolerance) ? Palette.onTime : Palette.offTime
+    }
 
     private var verdict: String {
         guard let placement = engine.recentPlacement else {
@@ -303,9 +316,13 @@ struct MainView: View {
                 .disabled(clockDriven)
             }
 
+            // Sans `step:`. Il ne servait à rien — le setter arrondit déjà —
+            // mais iOS 26 dessine la piste des crans sous la glissière, et à
+            // deux cent dix crans sur deux cents points elle se fond en une
+            // barre grise continue : un ornement qui n'informe de rien.
             Slider(value: Binding(get: { engine.settings.bpm },
                                   set: { engine.settings.bpm = $0.rounded(); engine.reanchor() }),
-                   in: 30...240, step: 1) {
+                   in: 30...240) {
                 Text("Tempo")
             }
             .disabled(clockDriven)

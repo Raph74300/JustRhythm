@@ -10,15 +10,13 @@ collected — see `PrivacyInfo.xcprivacy`.
 
 ## What it does
 
-- Tuner-style readout over the last 16 notes — center bar for on-target, a
-  triangle each side for early/late (`Views/BiasMeter.swift`). Both sides read
-  the range the notes actually land in (mean ± dispersion), not just the
-  average, so both triangles light for scattered-but-centered playing that an
-  average alone would call perfect — early and late errors cancel out in a mean
+- One-word readout over the last 16 notes — *on time*, *early*, *late*,
+  *uneven*. It reads the range the notes actually land in (mean ± dispersion),
+  not just the average: scattered-but-centered playing comes out *uneven* rather
+  than perfect, where an average alone would cancel the early errors against the
+  late ones
 - Real-time scrolling graph: a centered plumb line is the beat, notes land
   left (early), right (late), or on the line
-- Live stats: note count, average bias, dispersion, percentage in the "right"
-  zone
 - Metronome with five synthesized click tones, adjustable grid subdivision
   and accent
 - **Grid-relative accuracy** — the "right" zone is a percentage of the
