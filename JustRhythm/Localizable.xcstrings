@@ -762,6 +762,17 @@
         }
       }
     },
+    "Placement": {
+      "comment": "Accessibility label for the tuner-style readout.",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Placement"
+          }
+        }
+      }
+    },
     "Play a note: it should appear above, even with the metronome stopped.": {
       "localizations": {
         "fr": {

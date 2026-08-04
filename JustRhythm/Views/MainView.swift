@@ -136,30 +136,29 @@ struct MainView: View {
     // Lecture instantanée (EX-066)
     // =====================================================================
 
+    /// Les trois voyants seuls, d'aplomb sur le fil à plomb. (EX-066)
+    ///
+    /// Le mot qui doublait les voyants — *dans le temps*, *en avance* — a été
+    /// retiré, et c'est ce qui permet le centrage. Posé à droite des voyants, il
+    /// poussait forcément la barre centrale à gauche du milieu : l'ensemble était
+    /// centré, la barre ne l'était pas. Elle tombe maintenant exactement sur la
+    /// ligne verticale du graphe, juste en dessous. Les deux ne disent plus la
+    /// même chose à deux endroits, ils disent la même chose sur le même axe.
+    ///
+    /// Le verdict n'est pas perdu pour autant : il devient la valeur
+    /// d'accessibilité de l'ensemble, seule façon de continuer à énoncer le
+    /// placement à qui ne voit pas les voyants.
     private var readout: some View {
-        HStack(spacing: 14) {
-            BiasMeter(placement: engine.recentPlacement, tolerance: engine.tolerance)
-
-            Text(verdict)
-                .font(.title3.weight(.medium))
-                .foregroundStyle(currentTint)
-                .contentTransition(.opacity)
-                .animation(.easeOut(duration: 0.25), value: verdict)
-        }
-        // Côte à côte et non l'un sous l'autre : couché, chaque point de hauteur
-        // pris ici est un point de moins pour le graphe.
-        .frame(maxWidth: .infinity)
-        .accessibilityElement(children: .combine)
+        BiasMeter(placement: engine.recentPlacement, tolerance: engine.tolerance)
+            .frame(maxWidth: .infinity)
+            .accessibilityElement()
+            .accessibilityLabel(String(localized: "Placement"))
+            .accessibilityValue(verdict)
     }
 
     // Tout ce bloc lit la fourchette glissante, et non l'écart de la dernière
     // note : celui-ci change à chaque frappe, au point d'être illisible en
     // jouant. (EX-066)
-
-    private var currentTint: Color {
-        guard let placement = engine.recentPlacement else { return .secondary }
-        return placement.isWithin(engine.tolerance) ? Palette.onTime : Palette.offTime
-    }
 
     private var verdict: String {
         guard let placement = engine.recentPlacement else {
