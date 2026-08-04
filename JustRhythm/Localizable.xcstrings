@@ -241,7 +241,8 @@
             "value": "Revenir en portrait"
           }
         }
-      }
+      },
+      "extractionState": "stale"
     },
     "Bluetooth adds 10 to 20 ms of variable delay. Your average will be skewed — your regularity stays accurate. Prefer USB.": {
       "localizations": {
@@ -329,6 +330,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Timbre du clic"
+          }
+        }
+      }
+    },
+    "Click volume": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volume du clic"
           }
         }
       }
@@ -494,6 +505,16 @@
         }
       },
       "extractionState": "stale"
+    },
+    "Instrument volume": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volume de l'instrument"
+          }
+        }
+      }
     },
     "JustRhythm": {
       "comment": "The title of the app.",
@@ -1085,7 +1106,8 @@
             "value": "Basculer en paysage"
           }
         }
-      }
+      },
+      "extractionState": "stale"
     },
     "Unpitched noise: it never blends with any piano note.": {
       "localizations": {

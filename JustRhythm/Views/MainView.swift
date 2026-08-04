@@ -1,5 +1,17 @@
 import SwiftUI
 
+/// L'écran de mesure, couché. (EX-138)
+///
+/// Deux colonnes plutôt qu'une pile : le graphe à gauche sur les deux tiers, et
+/// sur le tiers restant tout ce qu'on touche en jouant. Le partage vient du
+/// câble — même coudé, il gêne quand le téléphone est debout sur le pupitre —
+/// et le paysage rend d'un coup la disposition verticale intenable : le graphe,
+/// les statistiques et le transport empilés ne tiennent pas dans les quelque
+/// 400 points de hauteur qui restent.
+///
+/// Ce que le paysage donne en échange n'est pas qu'un pis-aller : la largeur du
+/// graphe est ce qui porte la résolution de l'écart, et elle passe de 390 à plus
+/// de 600 points. On lit une avance de 10 ms là où elle tenait dans deux pixels.
 struct MainView: View {
 
     @State private var engine = RhythmEngine()
@@ -9,35 +21,29 @@ struct MainView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
 
-    /// Sur iPhone, la hauteur est compacte en paysage et seulement là. La lire
-    /// dans l'environnement plutôt que d'interroger la scène a l'avantage
-    /// d'être observable : le bouton de rotation change d'icône tout seul.
-    @Environment(\.verticalSizeClass) private var verticalSizeClass
-    private var isLandscape: Bool { verticalSizeClass == .compact }
+    /// Part de la largeur laissée au bandeau de droite.
+    private static let sidebarShare: CGFloat = 1.0 / 3.0
 
     var body: some View {
-        NavigationStack {
-            content
-                .background(Color(uiColor: .systemGroupedBackground))
-                .navigationTitle("JustRhythm")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button {
-                            showSettings = true
-                        } label: {
-                            Image(systemName: "gearshape")
-                        }
-                        .accessibilityLabel(String(localized: "Settings"))
-                    }
+        GeometryReader { geometry in
+            HStack(spacing: 0) {
+                measurement
+                    .frame(width: immersive
+                           ? geometry.size.width
+                           : geometry.size.width * (1 - Self.sidebarShare))
+
+                if !immersive {
+                    sidebar
+                        .frame(width: geometry.size.width * Self.sidebarShare)
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
                 }
-                // « Masque tout le reste » inclut le titre et l'engrenage, qui
-                // survivaient jusqu'ici au passage en plein écran. (EX-072)
-                // Couché, les 44 points qu'ils occupent se prélèvent sur une
-                // hauteur totale d'environ 400 : ils ne sont plus seulement de
-                // trop, ils coûtent une seconde d'historique visible. (EX-136)
-                .toolbar(immersive ? .hidden : .visible, for: .navigationBar)
+            }
         }
+        .background(Color(uiColor: .systemGroupedBackground))
+        .safeAreaInset(edge: .bottom) { messageBar }
+        // Plus de NavigationStack : sa barre coûtait 44 points de haut sur les
+        // 400 disponibles, pour un titre que personne ne lit et un engrenage qui
+        // a désormais sa place dans le bandeau.
         .sheet(isPresented: $showSettings) {
             SettingsView(engine: engine)
         }
@@ -46,113 +52,32 @@ struct MainView: View {
         .onChange(of: scenePhase) { _, phase in
             if phase != .active && engine.running { engine.stop() }
         }
-        // Le paysage n'existe qu'en plein écran. (EX-136)
-        .onChange(of: immersive) { _, on in
-            if on {
-                Orientation.allow([.portrait, .landscapeLeft, .landscapeRight])
-            } else {
-                Orientation.pin(.portrait)
-            }
-        }
     }
 
     // =====================================================================
+    // Colonne de gauche : la mesure
+    // =====================================================================
 
-    @ViewBuilder private var content: some View {
-        if immersive {
-            immersiveLayout
-        } else {
-            standardLayout
-        }
-    }
-
-    private var standardLayout: some View {
-        VStack(spacing: 16) {
-            readout
+    private var measurement: some View {
+        VStack(spacing: 6) {
+            if !immersive { readout }
 
             scope
-                .frame(height: 300)
-                .background(Color(uiColor: .secondarySystemGroupedBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-
-            StatsGrid(engine: engine)
-
-            Spacer(minLength: 0)
-
-            transport
+                .background(immersive ? Color.clear
+                            : Color(uiColor: .secondarySystemGroupedBackground))
+                .clipShape(RoundedRectangle(cornerRadius: immersive ? 0 : 12,
+                                            style: .continuous))
+                // Le graphe déborde jusqu'aux bords physiques en plein écran :
+                // couché, l'encoche mange une soixantaine de points sur un côté,
+                // et c'est la largeur qui porte la résolution de l'écart.
+                .ignoresSafeArea(edges: immersive ? .all : [])
         }
-        .padding(.horizontal, 16)
-        // Les voyants remplissent leur cadre de bord à bord, sans l'interligne
-        // qui aérait le chiffre qu'ils remplacent : sans cette marge, ils
-        // viennent toucher la barre de navigation.
-        .padding(.top, 28)
-        .safeAreaInset(edge: .bottom) { messageBar }
-    }
-
-    /// Mode plein écran : plus que la mesure. (EX-072)
-    ///
-    /// La zone de mesure est la même vue dans les deux modes, jamais une
-    /// seconde implémentation : seuls le cadrage et la densité changent.
-    private var immersiveLayout: some View {
-        ZStack {
-            Color(uiColor: .systemBackground).ignoresSafeArea()
-
-            scope.ignoresSafeArea()
-
-            VStack {
-                HStack {
-                    // Le pivot manuel n'est pas un doublon de la rotation
-                    // automatique : celle-ci ne se déclenche pas quand le verrou
-                    // d'orientation du système est actif, et le téléphone posé
-                    // sur un pupitre est précisément là où on l'active. (EX-136)
-                    Button {
-                        Orientation.pin(isLandscape ? .portrait : .landscapeRight)
-                    } label: {
-                        Image(systemName: isLandscape ? "iphone" : "iphone.landscape")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .frame(width: 44, height: 44)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(isLandscape
-                                        ? String(localized: "Back to portrait")
-                                        : String(localized: "Turn to landscape"))
-
-                    Spacer()
-                    Text(String(format: NSLocalizedString("%d bpm · %@", comment: ""),
-                               Int(engine.settings.bpm), engine.settings.subdivision.shortLabel))
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.horizontal, 20)
-
-                Spacer()
-
-                HStack {
-                    // Le total joué, comme dans la rangée de statistiques : le
-                    // pourcentage qui suit, lui, porte sur la fenêtre.
-                    Text(engine.stats.count > 0
-                         ? String(format: NSLocalizedString("%d notes · %d %%", comment: ""),
-                                  engine.stats.played, Int(engine.stats.inZone))
-                         : "—")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
-                    Spacer()
-                    Button { engine.toggle() } label: {
-                        Image(systemName: engine.running ? "stop.fill" : "play.fill")
-                            .font(.title3)
-                            .frame(width: 52, height: 52)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .buttonBorderShape(.circle)
-                    .tint(engine.running ? .secondary : .accentColor)
-                    .disabled(engine.settings.syncStart && !engine.running)
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 8)
-            }
+        .padding(.leading, immersive ? 0 : 12)
+        .padding(.vertical, immersive ? 0 : 10)
+        // Posée sur la pile et non sur le graphe : les commandes, elles,
+        // doivent rester en deçà de l'encoche et de la barre d'accueil.
+        .overlay(alignment: .bottom) {
+            if immersive { immersiveControls }
         }
     }
 
@@ -166,12 +91,45 @@ struct MainView: View {
             }
     }
 
+    /// En plein écran le bandeau disparaît : marche/arrêt doit rester à portée
+    /// de pouce, sans quoi le mode ne servirait qu'à regarder. (EX-091)
+    private var immersiveControls: some View {
+        HStack {
+            Text(engine.stats.count > 0
+                 ? String(format: NSLocalizedString("%d notes · %d %%", comment: ""),
+                          engine.stats.played, Int(engine.stats.inZone))
+                 : "—")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
+
+            Spacer()
+
+            Text(String(format: NSLocalizedString("%d bpm · %@", comment: ""),
+                        Int(engine.settings.bpm), engine.settings.subdivision.shortLabel))
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            Button { engine.toggle() } label: {
+                Image(systemName: engine.running ? "stop.fill" : "play.fill")
+                    .font(.title3)
+                    .frame(width: 52, height: 52)
+            }
+            .buttonStyle(.borderedProminent)
+            .buttonBorderShape(.circle)
+            .tint(engine.running ? .secondary : .accentColor)
+            .disabled(engine.settings.syncStart && !engine.running)
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 8)
+    }
+
     // =====================================================================
     // Lecture instantanée (EX-066)
     // =====================================================================
 
     private var readout: some View {
-        VStack(spacing: 6) {
+        HStack(spacing: 14) {
             BiasMeter(placement: engine.recentPlacement, tolerance: engine.tolerance)
 
             Text(verdict)
@@ -180,15 +138,15 @@ struct MainView: View {
                 .contentTransition(.opacity)
                 .animation(.easeOut(duration: 0.25), value: verdict)
         }
+        // Côte à côte et non l'un sous l'autre : couché, chaque point de hauteur
+        // pris ici est un point de moins pour le graphe.
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .combine)
     }
 
-
     // Tout ce bloc lit la fourchette glissante, et non l'écart de la dernière
     // note : celui-ci change à chaque frappe, au point d'être illisible en
     // jouant. (EX-066)
-
 
     private var currentTint: Color {
         guard let placement = engine.recentPlacement else { return .secondary }
@@ -197,8 +155,6 @@ struct MainView: View {
 
     private var verdict: String {
         guard let placement = engine.recentPlacement else {
-            // « milliseconds » servait d'unité sous le gros chiffre ; celui-ci
-            // est passé en dessous et porte désormais son unité.
             return engine.running ? String(localized: "play on the beat") : String(localized: "ready")
         }
         let tolerance = engine.tolerance
@@ -212,18 +168,33 @@ struct MainView: View {
     }
 
     // =====================================================================
-    // Transport : ce qu'on touche en jouant reste sur l'écran
+    // Colonne de droite : ce qu'on touche en jouant
     // =====================================================================
 
-    /// Vrai tant que l'horloge du clavier pilote le tempo : le régler à la
-    /// main n'aurait aucun effet, la valeur serait reprise au battement
-    /// suivant. Condition sur l'horloge reçue, et non sur le réglage de
-    /// synchro : un clavier qui envoie Start sans horloge laisse la main.
+    /// Vrai tant que l'horloge du clavier pilote le tempo : le régler à la main
+    /// n'aurait aucun effet, la valeur serait reprise au battement suivant.
     private var clockDriven: Bool { engine.clockBpm != nil }
 
-    private var transport: some View {
-        VStack(spacing: 14) {
-            HStack {
+    private var sidebar: some View {
+        // Défilement replié tant que tout tient : sur un grand écran il ne se
+        // manifeste jamais, sur un petit il évite que le bouton Démarrer sorte
+        // par le bas plutôt que d'être atteignable. (EX-091)
+        ScrollView {
+            VStack(spacing: 10) {
+                sidebarHeader
+                StatsGrid(engine: engine)
+                tempoControls
+                startButton
+                volumes
+            }
+            .padding(10)
+        }
+        .scrollBounceBehavior(.basedOnSize)
+    }
+
+    private var sidebarHeader: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
                 Label {
                     Text(engine.midi.selected?.name ?? String(localized: "No keyboard"))
                         .lineLimit(1)
@@ -234,6 +205,21 @@ struct MainView: View {
                 .font(.footnote)
                 .foregroundStyle(engine.midi.sources.isEmpty ? .secondary : .primary)
 
+                Spacer(minLength: 0)
+
+                Button {
+                    showSettings = true
+                } label: {
+                    Image(systemName: "gearshape")
+                        .font(.body)
+                        .frame(width: 32, height: 32)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(String(localized: "Settings"))
+            }
+
+            HStack(spacing: 6) {
                 if engine.settings.syncStart {
                     Label(engine.externallyTriggered ? "synced" : "waiting for Start",
                           systemImage: engine.externallyTriggered
@@ -241,31 +227,30 @@ struct MainView: View {
                         .font(.caption2)
                         .foregroundStyle(engine.externallyTriggered ? Palette.onTime : .secondary)
                         .labelStyle(.titleAndIcon)
-                        .fixedSize()
-                        .layoutPriority(1)
+                        .lineLimit(1)
                 }
 
                 Text(engine.settings.subdivision.label)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 7).padding(.vertical, 2)
-                    .background(Color(uiColor: .tertiarySystemFill),
-                                in: Capsule())
-                    .fixedSize()
-                    .layoutPriority(1)
+                    .background(Color(uiColor: .tertiarySystemFill), in: Capsule())
+                    .lineLimit(1)
 
-                Spacer()
+                Spacer(minLength: 0)
 
                 if let note = engine.midi.lastNote {
                     Text(note)
-                        .font(.footnote.monospaced())
+                        .font(.caption2.monospaced())
                         .foregroundStyle(.secondary)
-                        .fixedSize()
-                        .layoutPriority(1)
                 }
             }
+        }
+    }
 
-            HStack(spacing: 16) {
+    private var tempoControls: some View {
+        VStack(spacing: 6) {
+            HStack(spacing: 12) {
                 Button {
                     engine.settings.bpm = max(30, engine.settings.bpm - 1)
                     engine.reanchor()
@@ -276,9 +261,12 @@ struct MainView: View {
                 .buttonBorderShape(.circle)
                 .disabled(clockDriven)
 
-                VStack(spacing: 2) {
-                    // Quand l'horloge du clavier est suivie, c'est elle qui
-                    // fait foi : afficher le tempo réglé serait mensonger.
+                // Sur une ligne et non l'un sous l'autre : couché, l'unité en
+                // légende coûtait une ligne de plus dans une colonne qui n'en a
+                // pas à donner.
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    // Quand l'horloge du clavier est suivie, c'est elle qui fait
+                    // foi : afficher le tempo réglé serait mensonger.
                     Text(engine.clockBpm.map { String(format: "%.0f", $0) }
                          ?? "\(Int(engine.settings.bpm))")
                         .font(.system(.title2, design: .rounded, weight: .medium))
@@ -286,7 +274,9 @@ struct MainView: View {
                     Text(engine.clockBpm != nil ? "bpm received" : "bpm")
                         .font(.caption2).foregroundStyle(.secondary)
                 }
-                .frame(width: 78)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .frame(maxWidth: .infinity)
 
                 Button {
                     engine.settings.bpm = min(240, engine.settings.bpm + 1)
@@ -297,49 +287,83 @@ struct MainView: View {
                 .buttonStyle(.bordered)
                 .buttonBorderShape(.circle)
                 .disabled(clockDriven)
-
-                Spacer()
-
-                Button { engine.toggle() } label: {
-                    Label(engine.running ? "Stop" : "Start",
-                          systemImage: engine.running ? "stop.fill" : "play.fill")
-                        .frame(minWidth: 96)
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .tint(engine.running ? .secondary : .accentColor)
-                .disabled(engine.settings.syncStart && !engine.running)
             }
 
             Slider(value: Binding(get: { engine.settings.bpm },
                                   set: { engine.settings.bpm = $0.rounded(); engine.reanchor() }),
                    in: 30...240, step: 1) {
                 Text("Tempo")
-            } minimumValueLabel: {
-                Text("30").font(.caption2).foregroundStyle(.secondary)
-            } maximumValueLabel: {
-                Text("240").font(.caption2).foregroundStyle(.secondary)
             }
             .disabled(clockDriven)
-
-            HStack(spacing: 12) {
-                Image(systemName: engine.settings.clickEnabled
-                      ? "speaker.wave.2.fill" : "speaker.slash.fill")
-                    .foregroundStyle(.secondary)
-                    .onTapGesture { engine.settings.clickEnabled.toggle() }
-                    .accessibilityLabel(engine.settings.clickEnabled
-                                        ? String(localized: "Mute the click") : String(localized: "Enable the click"))
-
-                Slider(value: Binding(get: { engine.settings.volume },
-                                      set: { engine.settings.volume = $0 }),
-                       in: 0...1)
-                    .disabled(!engine.settings.clickEnabled)
-            }
         }
-        .padding(16)
-        .background(Color(uiColor: .secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .padding(.bottom, 8)
+    }
+
+    private var startButton: some View {
+        Button { engine.toggle() } label: {
+            Label(engine.running ? "Stop" : "Start",
+                  systemImage: engine.running ? "stop.fill" : "play.fill")
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.borderedProminent)
+        .controlSize(.large)
+        .tint(engine.running ? .secondary : .accentColor)
+        .disabled(engine.settings.syncStart && !engine.running)
+    }
+
+    /// Deux niveaux séparés. (EX-137)
+    ///
+    /// Le clic et les notes ne se dosent pas ensemble : il faut que le clic
+    /// reste audible *sous* le jeu, et le rapport juste dépend du timbre choisi
+    /// autant que du morceau. Un curseur unique obligeait à choisir lequel des
+    /// deux on sacrifiait.
+    private var volumes: some View {
+        VStack(spacing: 8) {
+            volumeRow(icon: engine.settings.clickEnabled
+                      ? "speaker.wave.2.fill" : "speaker.slash.fill",
+                      label: String(localized: "Click volume"),
+                      value: Binding(get: { engine.settings.clickVolume },
+                                     set: { engine.settings.clickVolume = $0 }),
+                      enabled: engine.settings.clickEnabled,
+                      iconAction: { engine.settings.clickEnabled.toggle() },
+                      iconHint: engine.settings.clickEnabled
+                          ? String(localized: "Mute the click")
+                          : String(localized: "Enable the click"))
+
+            volumeRow(icon: "pianokeys",
+                      label: String(localized: "Instrument volume"),
+                      value: Binding(get: { engine.settings.instrumentVolume },
+                                     set: {
+                                         engine.settings.instrumentVolume = $0
+                                         engine.instrumentVolumeChanged()
+                                     }),
+                      enabled: engine.settings.instrumentEnabled,
+                      iconAction: nil,
+                      iconHint: String(localized: "Instrument volume"))
+        }
+    }
+
+    private func volumeRow(icon: String,
+                           label: String,
+                           value: Binding<Double>,
+                           enabled: Bool,
+                           iconAction: (() -> Void)?,
+                           iconHint: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .frame(width: 22)
+                .contentShape(Rectangle())
+                .onTapGesture { iconAction?() }
+                .accessibilityLabel(iconHint)
+
+            Slider(value: value, in: 0...1) { Text(label) }
+                .disabled(!enabled)
+        }
+        // Le curseur du module reste visible quand celui-ci est coupé, grisé
+        // plutôt qu'absent : une commande qui disparaît fait sauter la
+        // disposition et laisse croire qu'on l'a rêvée.
+        .opacity(enabled ? 1 : 0.45)
     }
 
     @ViewBuilder private var messageBar: some View {
@@ -372,8 +396,7 @@ struct MessageBar: View {
                 // Sans `lineLimit` et avec `fixedSize` : le résumé tient sur une
                 // ligne aux tailles de texte courantes, mais s'il devait
                 // déborder — traduction plus longue, corps de texte agrandi — il
-                // passe à la ligne au lieu de se faire couper. C'est exactement
-                // ce qui manquait à l'ancien bandeau.
+                // passe à la ligne au lieu de se faire couper.
                 Text(message.summary)
                     .fixedSize(horizontal: false, vertical: true)
 
@@ -428,7 +451,11 @@ struct MessageBar: View {
 
 // =====================================================================
 
-/// Les quatre chiffres. (EX-080 à EX-083)
+/// Les quatre chiffres, en carré. (EX-080 à EX-083)
+///
+/// En deux colonnes et non plus en rangée : le bandeau fait un tiers de la
+/// largeur, où quatre cellules côte à côte n'auraient laissé la place ni au
+/// libellé ni à l'unité.
 struct StatsGrid: View {
 
     let engine: RhythmEngine
@@ -437,28 +464,36 @@ struct StatsGrid: View {
     private var step: Double { engine.gridPeriod }
 
     var body: some View {
-        HStack(spacing: 0) {
-            cell(String(localized: "Notes"),
-                 value: "\(engine.stats.played)",
-                 caption: sampleCaption)
-            divider
-            cell(String(localized: "Average"),
-                 value: hasData ? signed(engine.stats.mean) : "–",
-                 unit: hasData ? "ms" : nil)
-            divider
-            // « Dispersion » et non « Régularité » : c'est un écart-type, donc
-            // plus le nombre est grand, moins le jeu est régulier. L'ancien
-            // libellé se lisait à l'envers.
-            cell(String(localized: "Dispersion"),
-                 value: hasData ? String(format: "%.1f", engine.stats.sd * 1000) : "–",
-                 unit: hasData ? "ms" : nil,
-                 tint: dispersionTint)
-            divider
-            cell(String(localized: "In the zone"),
-                 value: hasData ? "\(Int(engine.stats.inZone))" : "–",
-                 unit: hasData ? "%" : nil)
+        Grid(horizontalSpacing: 0, verticalSpacing: 8) {
+            GridRow {
+                // Seule cette rangée réserve la ligne de légende, parce que
+                // seule « Notes » peut en porter une. La réserver partout
+                // coûtait une ligne pleine de plus dans une colonne comptée au
+                // point près ; ne la réserver nulle part ferait sauter la
+                // disposition en pleine séance, au moment où la fenêtre sature.
+                cell(String(localized: "Notes"),
+                     value: "\(engine.stats.played)",
+                     caption: sampleCaption,
+                     reservesCaption: true)
+                cell(String(localized: "Average"),
+                     value: hasData ? signed(engine.stats.mean) : "–",
+                     unit: hasData ? "ms" : nil,
+                     reservesCaption: true)
+            }
+            GridRow {
+                // « Dispersion » et non « Régularité » : c'est un écart-type,
+                // donc plus le nombre est grand, moins le jeu est régulier.
+                // L'ancien libellé se lisait à l'envers.
+                cell(String(localized: "Dispersion"),
+                     value: hasData ? String(format: "%.1f", engine.stats.sd * 1000) : "–",
+                     unit: hasData ? "ms" : nil,
+                     tint: dispersionTint)
+                cell(String(localized: "In the zone"),
+                     value: hasData ? "\(Int(engine.stats.inZone))" : "–",
+                     unit: hasData ? "%" : nil)
+            }
         }
-        .padding(.vertical, 12)
+        .padding(.vertical, 8)
         .background(Color(uiColor: .secondarySystemGroupedBackground))
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
@@ -474,16 +509,11 @@ struct StatsGrid: View {
         return String(format: NSLocalizedString("%d kept", comment: ""), engine.stats.count)
     }
 
-
     /// Vert tant que la dispersion reste acceptable, orange au-delà.
     private var dispersionTint: Color {
         guard hasData else { return .primary }
         return Regularity.isAcceptable(sd: engine.stats.sd, step: step)
             ? Palette.onTime : Palette.offTime
-    }
-
-    private var divider: some View {
-        Divider().frame(height: 34)
     }
 
     private func signed(_ seconds: Double) -> String {
@@ -496,13 +526,14 @@ struct StatsGrid: View {
                       value: String,
                       unit: String? = nil,
                       tint: Color = .primary,
-                      caption: String? = nil) -> some View {
-        VStack(spacing: 3) {
+                      caption: String? = nil,
+                      reservesCaption: Bool = false) -> some View {
+        VStack(spacing: 2) {
             Text(title)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
-                .minimumScaleFactor(0.8)
+                .minimumScaleFactor(0.7)
 
             HStack(alignment: .firstTextBaseline, spacing: 2) {
                 Text(value)
@@ -516,12 +547,14 @@ struct StatsGrid: View {
             .lineLimit(1)
             .minimumScaleFactor(0.6)
 
-            // Ligne toujours présente, même vide : sans cela les quatre
-            // cellules n'auraient pas la même hauteur.
-            Text(caption ?? " ")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-                .monospacedDigit()
+            if reservesCaption {
+                Text(caption ?? " ")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
         }
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .combine)

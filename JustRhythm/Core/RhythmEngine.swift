@@ -209,6 +209,9 @@ final class RhythmEngine {
         // ainsi le clavier directement, sans repli transitoire. (EX-013)
         midi.preferredID = settings.lastSourceID
         midi.start()
+        // Le niveau vit dans l'état partagé du moteur audio, qui survit aux
+        // démarrages et aux arrêts : le poser une fois ici suffit. (EX-137)
+        instrumentVolumeChanged()
     }
 
     /// Période réelle de la grille, en secondes.
@@ -402,6 +405,15 @@ final class RhythmEngine {
         }
     }
 
+    /// Reporte le niveau du module sonore sur le moteur audio. (EX-137)
+    ///
+    /// Un curseur, donc appelée en rafale : elle ne fait qu'écrire un flottant
+    /// derrière le verrou de l'état partagé, sans passer par la file
+    /// d'événements du synthé, dimensionnée pour des notes.
+    func instrumentVolumeChanged() {
+        metronome.setInstrumentVolume(Float(settings.instrumentVolume))
+    }
+
     /// Suit la bascule du module sonore depuis les Réglages.
     func instrumentSettingChanged() {
         if settings.instrumentEnabled {
@@ -454,7 +466,7 @@ final class RhythmEngine {
                                detail: error.localizedDescription)
             return
         }
-        metronome.playTestClick(voice: settings.clickVoice, volume: Float(settings.volume))
+        metronome.playTestClick(voice: settings.clickVoice, volume: Float(settings.clickVolume))
     }
 
     // =====================================================================
@@ -474,7 +486,7 @@ final class RhythmEngine {
                 if settings.clickEnabled && isMain {
                     metronome.schedule(at: nextStep,
                                        voice: settings.clickVoice,
-                                       volume: Float(settings.volume))
+                                       volume: Float(settings.clickVolume))
                 }
                 scheduled.append(Beat(time: nextStep, isMain: isMain))
                 stepIndex += 1

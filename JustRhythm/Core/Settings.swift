@@ -55,7 +55,19 @@ final class Settings {
     // — Métronome : ce qu'on touche en jouant, donc sur l'écran principal —
     var bpm: Double { didSet { store.set(bpm, forKey: K.bpm) } }
     var clickEnabled: Bool { didSet { store.set(clickEnabled, forKey: K.click) } }
-    var volume: Double { didSet { store.set(volume, forKey: K.volume) } }
+    /// Volume du clic seul. (EX-043)
+    ///
+    /// La clé de stockage reste `volume`, celle du réglage unique d'avant : le
+    /// niveau déjà choisi survit à la mise à jour.
+    var clickVolume: Double { didSet { store.set(clickVolume, forKey: K.clickVol) } }
+    /// Volume des notes sonorisées par l'iPhone. (EX-137)
+    ///
+    /// Séparé du clic, parce que les deux ne se dosent pas ensemble : le clic
+    /// doit rester audible sous les notes, et le bon rapport dépend du timbre
+    /// choisi autant que du morceau. Par défaut au maximum, c'est-à-dire
+    /// exactement le niveau qu'avait le module avant d'être réglable — le
+    /// curseur ne fait qu'atténuer, il ne peut rien saturer.
+    var instrumentVolume: Double { didSet { store.set(instrumentVolume, forKey: K.instrVol) } }
     /// (EX-041)
     var subdivision: Subdivision { didSet { store.set(subdivision.rawValue, forKey: K.subdiv) } }
     /// (EX-051)
@@ -116,7 +128,8 @@ final class Settings {
     init() {
         bpm          = Self.double(K.bpm, 80)
         clickEnabled = Self.bool(K.click, true)
-        volume       = Self.double(K.volume, 0.5)
+        clickVolume  = Self.double(K.clickVol, 0.5)
+        instrumentVolume = Self.double(K.instrVol, 1.0)
         subdivision  = Subdivision(rawValue: Self.int(K.subdiv, 1)) ?? .quarter
         clickVoice   = ClickVoice(rawValue: Self.int(K.voice, 0)) ?? .claves
         syncStart    = Self.bool(K.syncStart, false)
@@ -138,7 +151,8 @@ final class Settings {
 
 
     private enum K {
-        static let bpm = "bpm", click = "click", volume = "volume"
+        static let bpm = "bpm", click = "click", clickVol = "volume"
+        static let instrVol = "instrVol"
         static let subdiv = "subdiv", voice = "voice"
         static let syncStart = "syncStart"
         static let instrOn = "instrOn", instrVoice = "instrVoice"
