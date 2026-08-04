@@ -16,7 +16,12 @@ struct ScopeView: View {
 
     /// Hauteur réservée à la règle, en bas. Le défilement s'arrête au-dessus :
     /// une graduation lisible vaut mieux qu'une poignée de pixels de plus.
-    private let rulerHeight: CGFloat = 50
+    ///
+    /// Ramenée de 50 à 36 depuis que le pourcentage de la zone juste s'aligne
+    /// sur les pictogrammes au lieu de s'écrire sous eux. Couché, la hauteur est
+    /// la dimension rare : quatorze points repris à la règle sont quatorze
+    /// points de défilement rendus au graphe.
+    private let rulerHeight: CGFloat = 36
 
     var body: some View {
         TimelineView(.animation) { timeline in
@@ -188,12 +193,18 @@ struct ScopeView: View {
             }
         }
 
-        // Le chiffre seul, centré sous sa zone. L'accolade a été retirée : la
-        // bande verte montre déjà l'étendue sur toute la hauteur du graphe, et
-        // la redoubler d'un trait n'ajoutait rien qu'un ornement de plus.
+        // Le chiffre seul, centré sur sa zone — et désormais sur la même ligne
+        // que les pictogrammes plutôt qu'une ligne sous eux. Il n'a jamais rien
+        // eu à voir avec la largeur d'une graduation : rien ne le retenait en
+        // bas, et l'y laisser coûtait une ligne entière de règle. La place
+        // centrale est libre de toute façon, la graduation la plus proche
+        // tombant au huitième de temps, à cinquante points au moins d'ici.
+        //
+        // L'accolade a été retirée de longue date : la bande verte montre déjà
+        // l'étendue sur toute la hauteur du graphe.
         context.draw(Text(zoneLabel).font(.system(size: 10, weight: .medium))
                         .foregroundColor(Palette.onTime),
-                     at: CGPoint(x: cx, y: top + 42))
+                     at: CGPoint(x: cx, y: top + 22))
     }
 
     /// Le pourcentage réglé — sauf quand le plancher de 20 ms l'emporte, auquel

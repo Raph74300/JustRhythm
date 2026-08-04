@@ -5,9 +5,13 @@ import SwiftUI
 /// Deux colonnes plutôt qu'une pile : le graphe à gauche sur les deux tiers, et
 /// sur le tiers restant tout ce qu'on touche en jouant. Le partage vient du
 /// câble — même coudé, il gêne quand le téléphone est debout sur le pupitre —
-/// et le paysage rend d'un coup la disposition verticale intenable : le graphe,
-/// les statistiques et le transport empilés ne tiennent pas dans les quelque
-/// 400 points de hauteur qui restent.
+/// et le paysage rend d'un coup la disposition verticale intenable : graphe et
+/// transport empilés ne tiennent pas dans les quelque 400 points de hauteur qui
+/// restent.
+///
+/// Ce que le bandeau porte a été tranché par la négative : rien qui décrive ce
+/// qui vient d'être joué. Cet écran sert à corriger le geste en cours, et quatre
+/// chiffres de bilan y invitaient à s'arrêter pour les lire.
 ///
 /// Ce que le paysage donne en échange n'est pas qu'un pis-aller : la largeur du
 /// graphe est ce qui porte la résolution de l'écart, et elle passe de 390 à plus
@@ -59,8 +63,13 @@ struct MainView: View {
     // =====================================================================
 
     private var measurement: some View {
-        VStack(spacing: 6) {
-            if !immersive { readout }
+        VStack(spacing: 12) {
+            if !immersive {
+                // Le Tuner touchait le haut de l'écran. C'est pourtant lui qu'on
+                // consulte le plus, et une commande collée au bord se lit mal
+                // autant qu'elle se touche mal.
+                readout.padding(.top, 8)
+            }
 
             scope
                 .background(immersive ? Color.clear
@@ -72,8 +81,12 @@ struct MainView: View {
                 // et c'est la largeur qui porte la résolution de l'écart.
                 .ignoresSafeArea(edges: immersive ? .all : [])
         }
-        .padding(.leading, immersive ? 0 : 12)
-        .padding(.vertical, immersive ? 0 : 10)
+        .padding(.leading, immersive ? 0 : 16)
+        // Une gouttière côté bandeau : sans elle, le cadre du graphe venait
+        // buter contre les commandes.
+        .padding(.trailing, immersive ? 0 : 6)
+        .padding(.top, immersive ? 0 : 10)
+        .padding(.bottom, immersive ? 0 : 14)
         // Posée sur la pile et non sur le graphe : les commandes, elles,
         // doivent rester en deçà de l'encoche et de la barre d'accueil.
         .overlay(alignment: .bottom) {
@@ -94,15 +107,10 @@ struct MainView: View {
     /// En plein écran le bandeau disparaît : marche/arrêt doit rester à portée
     /// de pouce, sans quoi le mode ne servirait qu'à regarder. (EX-091)
     private var immersiveControls: some View {
+        // Le décompte de notes et le pourcentage de la séance sont partis avec
+        // le carré de statistiques, et pour la même raison : ils parlent de ce
+        // qui est déjà joué. Il ne reste que ce qui sert à jouer.
         HStack {
-            Text(engine.stats.count > 0
-                 ? String(format: NSLocalizedString("%d notes · %d %%", comment: ""),
-                          engine.stats.played, Int(engine.stats.inZone))
-                 : "—")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .monospacedDigit()
-
             Spacer()
 
             Text(String(format: NSLocalizedString("%d bpm · %@", comment: ""),
@@ -175,21 +183,28 @@ struct MainView: View {
     /// n'aurait aucun effet, la valeur serait reprise au battement suivant.
     private var clockDriven: Bool { engine.clockBpm != nil }
 
+    /// Ce qu'on touche en jouant, et rien d'autre. (EX-138)
+    ///
+    /// Le carré de statistiques a été retiré d'ici : quatre chiffres qui
+    /// décrivent ce qui vient d'être joué invitent à s'arrêter pour les lire,
+    /// alors que tout l'objet de cet écran est la correction en cours. Le moteur
+    /// continue de les tenir — ils reviendront avec l'export, où ils sont à leur
+    /// place. (EX-080 à EX-084)
+    ///
+    /// Plus de `ScrollView` non plus : ce qui reste tient partout, et deux
+    /// ressorts répartissent l'excédent — l'en-tête reste en haut, les commandes
+    /// descendent vers les pouces. (EX-091)
     private var sidebar: some View {
-        // Défilement replié tant que tout tient : sur un grand écran il ne se
-        // manifeste jamais, sur un petit il évite que le bouton Démarrer sorte
-        // par le bas plutôt que d'être atteignable. (EX-091)
-        ScrollView {
-            VStack(spacing: 10) {
-                sidebarHeader
-                StatsGrid(engine: engine)
-                tempoControls
-                startButton
-                volumes
-            }
-            .padding(10)
+        VStack(spacing: 20) {
+            sidebarHeader
+            Spacer(minLength: 8)
+            tempoControls
+            startButton
+            Spacer(minLength: 8)
+            volumes
         }
-        .scrollBounceBehavior(.basedOnSize)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 14)
     }
 
     private var sidebarHeader: some View {
@@ -449,117 +464,6 @@ struct MessageBar: View {
     }
 }
 
-// =====================================================================
-
-/// Les quatre chiffres, en carré. (EX-080 à EX-083)
-///
-/// En deux colonnes et non plus en rangée : le bandeau fait un tiers de la
-/// largeur, où quatre cellules côte à côte n'auraient laissé la place ni au
-/// libellé ni à l'unité.
-struct StatsGrid: View {
-
-    let engine: RhythmEngine
-
-    private var hasData: Bool { engine.stats.count > 0 }
-    private var step: Double { engine.gridPeriod }
-
-    var body: some View {
-        Grid(horizontalSpacing: 0, verticalSpacing: 8) {
-            GridRow {
-                // Seule cette rangée réserve la ligne de légende, parce que
-                // seule « Notes » peut en porter une. La réserver partout
-                // coûtait une ligne pleine de plus dans une colonne comptée au
-                // point près ; ne la réserver nulle part ferait sauter la
-                // disposition en pleine séance, au moment où la fenêtre sature.
-                cell(String(localized: "Notes"),
-                     value: "\(engine.stats.played)",
-                     caption: sampleCaption,
-                     reservesCaption: true)
-                cell(String(localized: "Average"),
-                     value: hasData ? signed(engine.stats.mean) : "–",
-                     unit: hasData ? "ms" : nil,
-                     reservesCaption: true)
-            }
-            GridRow {
-                // « Dispersion » et non « Régularité » : c'est un écart-type,
-                // donc plus le nombre est grand, moins le jeu est régulier.
-                // L'ancien libellé se lisait à l'envers.
-                cell(String(localized: "Dispersion"),
-                     value: hasData ? String(format: "%.1f", engine.stats.sd * 1000) : "–",
-                     unit: hasData ? "ms" : nil,
-                     tint: dispersionTint)
-                cell(String(localized: "In the zone"),
-                     value: hasData ? "\(Int(engine.stats.inZone))" : "–",
-                     unit: hasData ? "%" : nil)
-            }
-        }
-        .padding(.vertical, 8)
-        .background(Color(uiColor: .secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-    }
-
-    /// Taille de l'échantillon, affichée seulement quand la fenêtre glissante
-    /// sature. (EX-084)
-    ///
-    /// Tant que toutes les notes de la séance sont retenues, la préciser
-    /// n'apprendrait rien ; passé ce point, elle explique pourquoi les trois
-    /// autres cases ne décrivent plus toute la séance.
-    private var sampleCaption: String? {
-        guard engine.stats.played > engine.stats.count else { return nil }
-        return String(format: NSLocalizedString("%d kept", comment: ""), engine.stats.count)
-    }
-
-    /// Vert tant que la dispersion reste acceptable, orange au-delà.
-    private var dispersionTint: Color {
-        guard hasData else { return .primary }
-        return Regularity.isAcceptable(sd: engine.stats.sd, step: step)
-            ? Palette.onTime : Palette.offTime
-    }
-
-    private func signed(_ seconds: Double) -> String {
-        let ms = seconds * 1000
-        let sign = ms > 0.05 ? "+" : (ms < -0.05 ? "−" : "")
-        return sign + String(format: "%.1f", abs(ms))
-    }
-
-    private func cell(_ title: String,
-                      value: String,
-                      unit: String? = nil,
-                      tint: Color = .primary,
-                      caption: String? = nil,
-                      reservesCaption: Bool = false) -> some View {
-        VStack(spacing: 2) {
-            Text(title)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-
-            HStack(alignment: .firstTextBaseline, spacing: 2) {
-                Text(value)
-                    .font(.system(.body, design: .rounded, weight: .medium))
-                    .monospacedDigit()
-                    .foregroundStyle(tint)
-                if let unit {
-                    Text(unit).font(.caption2).foregroundStyle(.secondary)
-                }
-            }
-            .lineLimit(1)
-            .minimumScaleFactor(0.6)
-
-            if reservesCaption {
-                Text(caption ?? " ")
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-                    .monospacedDigit()
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .accessibilityElement(children: .combine)
-    }
-}
 
 #Preview {
     MainView()
