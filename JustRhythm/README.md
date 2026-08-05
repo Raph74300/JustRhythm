@@ -8,19 +8,25 @@ Requires iOS 17+ and a MIDI keyboard (USB, Bluetooth, or a keyboard already
 paired in iOS Settings). No microphone permission, no account, no data
 collected — see `PrivacyInfo.xcprivacy`.
 
+**Landscape only.** A cable, even a right-angled one, butts against the music
+stand while the phone stands upright. The measuring screen is two columns: the
+graph on the left two thirds, everything you touch while playing on the right
+third. Width is what carries the resolution of the deviation — it went from 390
+points to more than 600 when the app was laid on its side.
+
 ## What it does
 
-- Tuner-style readout over the last 16 notes — center bar for on-target, a
-  triangle each side for early/late (`Views/BiasMeter.swift`). Both sides read
-  the range the notes actually land in (mean ± dispersion), not just the
-  average, so both triangles light for scattered-but-centered playing that an
-  average alone would call perfect — early and late errors cancel out in a mean
+- One-word readout over the last 16 notes — *on time*, *early*, *late*,
+  *uneven*. It reads the range the notes actually land in (mean ± dispersion),
+  not just the average: scattered-but-centered playing comes out *uneven* rather
+  than perfect, where an average alone would cancel the early errors against the
+  late ones
 - Real-time scrolling graph: a centered plumb line is the beat, notes land
   left (early), right (late), or on the line
-- Live stats: note count, average bias, dispersion, percentage in the "right"
-  zone
 - Metronome with five synthesized click tones, adjustable grid subdivision
-  and accent
+  and accent. Click and instrument have separate volumes, each with its own
+  mute — the click has to stay audible under the playing, and the right ratio
+  depends on the timbre as much as on the piece
 - **Grid-relative accuracy** — the "right" zone is a percentage of the
   subdivision with a 20 ms floor, and the graph is capped at half a
   subdivision (the point where a note flips to the next grid step). Both

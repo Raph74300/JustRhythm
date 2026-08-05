@@ -13,6 +13,8 @@ JustRhythm mesure la précision de ton placement rythmique. Branche un clavier M
   - **USB** — filaire, le plus précis, sans latence ajoutée
   - **Bluetooth** — un clavier déjà appairé dans les réglages iOS apparaît tout seul ; ajoute 10 à 20 ms de gigue variable (voir §3)
 
+L'application s'utilise **couchée**, dans un sens ou dans l'autre : le câble sort alors sur le côté au lieu de buter contre le pupitre. Il n'y a pas de mode portrait.
+
 Aucune permission micro n'est jamais demandée. JustRhythm n'écoute que le MIDI.
 
 ---
@@ -20,7 +22,7 @@ Aucune permission micro n'est jamais demandée. JustRhythm n'écoute que le MIDI
 ## 2. Prise en main
 
 1. Branche le clavier. Ouvre JustRhythm — l'application retient le dernier clavier utilisé et s'y reconnecte seule au lancement suivant.
-2. Joue une note. Son nom (« Do4 » par exemple) doit apparaître en bas de l'écran principal : c'est la confirmation que la liaison fonctionne, avant même d'avoir appuyé sur Démarrer.
+2. Joue une note. Son nom (« Do4 » par exemple) doit apparaître dans le bandeau de droite : c'est la confirmation que la liaison fonctionne, avant même d'avoir appuyé sur Démarrer.
 3. Touche **Démarrer** pour lancer le métronome. Joue : chaque note est jugée à l'instant où elle survient.
 4. Touche **Arrêter** pour clore la séance.
 
@@ -28,18 +30,13 @@ Aucune permission micro n'est jamais demandée. JustRhythm n'écoute que le MIDI
 
 ## 3. L'écran principal
 
-**Lecture instantanée (en haut).** Trois voyants, à lire comme un accordeur de guitare : un triangle de chaque côté et une barre au milieu. C'est ce qu'on regarde en jouant.
+L'écran se lit en deux colonnes : le graphe occupe les deux tiers de gauche, et le tiers de droite porte tout ce qu'on touche en jouant.
 
-- **Barre centrale verte** — ton jeu tient dans la zone « juste ». Rien d'autre n'est allumé
-- **Triangle gauche** — tu es **en avance**
-- **Triangle droit** — tu es **en retard**
-- **Les deux triangles** — ton placement est **irrégulier** : centré en moyenne, mais dispersé autour du temps
+**Lecture instantanée (au-dessus du graphe).** Un mot, et lui seul — *dans le temps*, *en avance*, *en retard*, *irrégulier*. Il est centré sur la ligne verticale du graphe, juste en dessous : les deux disent la même chose sur le même axe. Vert quand tu es dans la zone, orange sinon, la couleur ne faisant que doubler le mot.
 
-Comme sur un accordeur, le centre ne s'allume que lorsque la cible est atteinte : c'est l'état visé, pas un repère permanent. Les voyants éteints restent faiblement visibles, pour que la cible soit identifiable avant d'avoir joué la moindre note.
+*Irrégulier* est le mot qu'il faut comprendre : il veut dire centré en moyenne mais dispersé autour du temps. C'est pour lui que la lecture suit une *fourchette* et non une simple moyenne. Une moyenne seule le masquerait — une note 40 ms en avance et une 40 ms en retard s'annulent, et l'application déclarerait parfait un jeu approximatif. Ce que le mot reflète, c'est la plage où tombent réellement tes notes récentes : son centre *et* sa largeur. Et elle porte sur tes **16 dernières notes**, non sur la dernière : l'écart d'une note isolée saute trop d'une frappe à l'autre pour qu'on puisse se corriger dessus — on courrait après du bruit.
 
-Ce quatrième état est la raison pour laquelle la lecture suit une *fourchette* et non une simple moyenne. Une moyenne seule le masquerait : une note 40 ms en avance et une 40 ms en retard s'annulent, et l'application déclarerait parfait un jeu approximatif. Ce que les voyants reflètent, c'est la plage où tombent réellement tes notes récentes — son centre *et* sa largeur. Et elle porte sur tes **16 dernières notes**, non sur la dernière : l'écart d'une note isolée saute trop d'une frappe à l'autre pour qu'on puisse se corriger dessus — on courrait après du bruit.
-
-En dessous, un mot dit la même chose en clair — *dans le temps*, *en avance*, *en retard*, *irrégulier*. Rien d'autre : ce bloc se consulte d'un coup d'œil sans quitter le clavier des yeux, et un chiffre y demanderait d'être lu. Les valeurs se trouvent dans la rangée de statistiques, sous **Moyenne** et **Dispersion**.
+Rien d'autre à cet endroit, et pas un chiffre : ce qu'on regarde en jouant doit se lire sans être lu.
 
 **Le graphe.** Une ligne verticale centrale représente le temps. Le défilement va du haut vers le bas : les événements les plus récents sont en haut, et s'estompent en descendant. Chaque note apparaît sous forme de barre : sur la ligne si tu étais pile, à gauche en avance, à droite en retard.
 
@@ -49,30 +46,26 @@ Trois teintes, du dehors vers le dedans :
 
 - **Gris — hors d'atteinte.** Aucune note ne peut y tomber : au-delà, elle appartiendrait au pas de grille suivant. La part de gris te dit donc, d'un coup d'œil, à quel point la grille que tu as choisie est exigeante. Aucune en noires, les trois quarts de la largeur en doubles-croches.
 - **Orangé — mesurable, hors zone.** C'est la plage que ta grille sait juger.
-- **Vert — la zone « juste ».** Sa largeur suit ton réglage de tolérance, et le pourcentage rappelé en dessous en donne la valeur.
+- **Vert — la zone « juste ».** Sa largeur suit ton réglage de tolérance, et le pourcentage rappelé sur la règle, entre les pictogrammes, en donne la valeur.
 
 Un filet marque chaque frontière, pour que l'information ne repose pas sur la couleur seule.
 
 En bas, une **règle en valeurs de note** : la demi-largeur vaut une croche, le quart une double-croche, le huitième une triple-croche. Tu lis donc ton écart en musique — « en retard d'une double-croche » — et non en millisecondes. En triolets, les repères passent au tiers et au sixième de temps, marqués d'un 3. Ceux qui tombent dans le gris sont estompés : ils existent, mais ta grille ne peut pas les atteindre.
 
-**Touche le graphe** pour passer en plein écran. Là, et là seulement, tu peux coucher le téléphone : tourne-le, ou touche l'icône en haut à gauche si le verrou de rotation d'iOS est actif — ce qui est souvent le cas d'un téléphone posé sur un pupitre. Le portrait revient de lui-même quand tu quittes le plein écran.
+**Touche le graphe** pour passer en plein écran : le bandeau s'efface et le graphe prend toute la largeur, jusque sous l'encoche. Le tempo et **Démarrer / Arrêter** restent en bas à droite, sous le pouce. Touche à nouveau pour revenir.
 
 Chaque note est mesurée pour elle-même : il n'y a pas de regroupement d'accord. Les notes d'un accord apparaissent donc séparément, et c'est voulu — tu vois du même coup si l'accord est *ensemble*, ce qu'un regroupement masquerait. Cela évite aussi qu'un legato un peu chevauchant se fasse avaler.
 
-**Rangée de statistiques**, sous le graphe :
-- **Notes** — combien tu en as jouées depuis le début de la séance. Le compte continue de monter tant que tu joues. Dès que la fenêtre statistique commence à écarter les plus anciennes, un petit chiffre en dessous indique combien sont encore retenues : c'est l'échantillon sur lequel reposent les trois cases voisines
-- **Moyenne** — ton biais systématique : positif si tu traînes, négatif si tu précipites
-- **Dispersion** — à quel point tes notes sont éparpillées autour de ta propre moyenne (un écart-type, en ms), indépendamment du biais ci-dessus. **Plus le nombre est grand, moins c'est bon** : 0 signifierait que toutes tes notes tombent exactement au même endroit. Elle passe en orange au-delà de la limite acceptable, fixée au plus permissif entre 5 % du pas et 15 ms
-- **Dans la zone** — le pourcentage de notes tombées dans ta zone « juste »
-
-**Barre de transport**, en bas :
-- Le nom du clavier (ou « Aucun clavier »), et — si le démarrage synchronisé est actif — si l'application *attend le Start* ou est déjà *synchronisée* sur la boîte à rythmes du clavier
-- La subdivision de la grille (« Noires » par exemple) et la dernière note jouée
+**Le bandeau de droite** porte, de haut en bas :
+- Le nom du clavier (ou « Aucun clavier »), et l'engrenage des réglages
+- Si le démarrage synchronisé est actif, un témoin disant si l'application *attend le Start* ou est déjà *synchronisée* sur la boîte à rythmes du clavier ; puis la subdivision de la grille (« Noires » par exemple) et la dernière note jouée
 - Le tempo, avec les boutons **−**/**+** et un curseur (30 à 240 bpm). Si l'application suit l'horloge MIDI du clavier, c'est le tempo reçu qui s'affiche et les commandes se grisent — c'est le clavier qui commande
 - **Démarrer / Arrêter**
-- L'interrupteur de coupure du clic et son volume
+- Deux volumes séparés : le **clic** du métronome et l'**instrument**, c'est-à-dire les notes que l'iPhone sonorise lui-même (§4). Chaque icône coupe et rétablit sa voix — haut-parleur pour le clic, note de musique pour l'instrument, barrée quand elle est muette. Le clic doit rester audible *sous* ton jeu, et le bon rapport dépend du timbre choisi autant que du morceau : c'est pour ça qu'ils ne se règlent pas ensemble
 
-Un message peut apparaître juste au-dessus de la barre de transport — un avertissement sur le retard de ta sortie audio (typique d'une enceinte ou d'un casque sans fil), ou l'absence d'horloge MIDI derrière un départ synchronisé. Il tient sur une ligne : **touche-le** pour lire l'explication complète, qui dit quoi faire, et la croix pour l'effacer. Un message disparaît de toute façon quand tu arrêtes la séance qu'il décrit.
+Tu ne trouveras ici aucun chiffre de bilan — nombre de notes, moyenne, dispersion. C'est délibéré : cet écran sert à corriger le geste en cours, et quatre chiffres décrivant ce qui vient d'être joué invitent à s'arrêter pour les lire. Ils reviendront le jour où l'application saura exporter une séance.
+
+Un message peut apparaître en bas de l'écran, sur toute la largeur — un avertissement sur le retard de ta sortie audio (typique d'une enceinte ou d'un casque sans fil), ou l'absence d'horloge MIDI derrière un départ synchronisé. Il tient sur une ligne : **touche-le** pour lire l'explication complète, qui dit quoi faire, et la croix pour l'effacer. Un message disparaît de toute façon quand tu arrêtes la séance qu'il décrit.
 
 ---
 
@@ -118,7 +111,7 @@ Les sons sont synthétisés dans l'application plutôt qu'échantillonnés : rie
 
 Cela ne vaut que **métronome en marche** : à l'arrêt il n'y a pas de justesse à juger, et toutes les notes sonnent — sinon couper le métronome rendrait ton clavier muet.
 
-Désactivé par défaut.
+Désactivé par défaut. Une fois activé, l'interrupteur reste à portée sans revenir ici : l'icône du curseur de volume de l'instrument, sur l'écran de mesure, coupe et rétablit le module. C'est le même interrupteur que celui-ci, vu d'ailleurs.
 
 
 ### Alignement
@@ -138,16 +131,11 @@ Deux nombres interviennent, et ils n'agissent **pas au même endroit** — c'est
 Le bouton **Tester le son** joue un clic isolé pour vérifier la chaîne audio sans lancer de séance.
 
 ### Mesure
-Les deux premiers réglages s'expriment **par rapport à la grille de référence**, et non en millisecondes fixes — parce qu'un même écart n'a pas la même portée sur une noire lente et sur une double-croche rapide. Tous deux affichent la valeur en ms qui en découle au tempo courant, pour que le chiffre concret reste sous les yeux.
+Le premier réglage s'exprime **par rapport à la grille de référence**, et non en millisecondes fixes — parce qu'un même écart n'a pas la même portée sur une noire lente et sur une double-croche rapide. Il affiche la valeur en ms qui en découle au tempo courant, pour que le chiffre concret reste sous les yeux.
 
 - **Zone « juste »** — la largeur de la bande de justesse, en pourcentage de la subdivision ; elle détermine la bande verte du graphe et la base du pourcentage « dans la zone ». Elle se resserre d'elle-même quand la grille s'affine. Elle ne descend jamais sous **20 ms** : en deçà, un écart cesse d'être audible, l'exiger serait arbitraire. Quand c'est ce plancher qui s'applique, la valeur affiche `(mini)` — sur une grille fine c'est normal, et bouger le curseur de pourcentage n'y changera rien tant que tu ne montes pas nettement.
-- **Échelle affichée** — la largeur du graphe, en pourcentage d'une demi-subdivision. À 100 %, le graphe couvre exactement la plage qu'un écart peut atteindre : au-delà d'une demi-subdivision, une note appartient au pas de grille *suivant*, il n'y a donc rien à y montrer. Baisse-la pour resserrer. Purement visuel : la mesure ne change jamais.
-- **Fenêtre statistique** — combien de notes récentes alimentent le bilan, pour qu'un début de séance hésitant ne plombe pas la moyenne indéfiniment.
 
-Comme les deux premiers suivent le tempo, en changer au milieu d'une séance déplace aussi le pourcentage « dans la zone » déjà accumulé.
-
-### Données
-**Effacer les statistiques** remet les compteurs et le graphe à zéro sans arrêter le métronome — pratique pour repartir sur une lecture propre en cours de séance.
+Comme la zone suit le tempo, en changer au milieu d'une séance déplace aussi la part de notes qui y tombent.
 
 ### À propos
 La version de l'application, et un rappel : aucune donnée ne quitte l'appareil, aucun compte, aucune mesure d'audience, aucun accès au microphone.
@@ -158,8 +146,8 @@ La version de l'application, et un rappel : aucune donnée ne quitte l'appareil,
 
 1. **Une fois pour toutes** : étalonne la correction manuelle avec un fichier quantifié (§4, Alignement). Elle dépend de ton matériel, pas du morceau — inutile d'y revenir à chaque séance.
 2. Réglages → active **Démarrage synchronisé** si tu joues sur la boîte à rythmes du clavier.
-3. Joue normalement. Regarde les voyants ; le graphe et les statistiques se remplissent.
-4. Pour une lecture propre sur un passage précis, utilise **Effacer les statistiques** juste avant de l'attaquer.
+3. Joue normalement. Regarde le mot au-dessus du graphe ; le graphe se remplit sous lui.
+4. Touche le graphe pour passer en plein écran quand tu veux la plus grande résolution possible sur ton écart.
 
 ---
 

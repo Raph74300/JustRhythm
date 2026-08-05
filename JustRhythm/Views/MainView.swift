@@ -1,5 +1,21 @@
 import SwiftUI
 
+/// L'écran de mesure, couché. (EX-138)
+///
+/// Deux colonnes plutôt qu'une pile : le graphe à gauche sur les deux tiers, et
+/// sur le tiers restant tout ce qu'on touche en jouant. Le partage vient du
+/// câble — même coudé, il gêne quand le téléphone est debout sur le pupitre —
+/// et le paysage rend d'un coup la disposition verticale intenable : graphe et
+/// transport empilés ne tiennent pas dans les quelque 400 points de hauteur qui
+/// restent.
+///
+/// Ce que le bandeau porte a été tranché par la négative : rien qui décrive ce
+/// qui vient d'être joué. Cet écran sert à corriger le geste en cours, et quatre
+/// chiffres de bilan y invitaient à s'arrêter pour les lire.
+///
+/// Ce que le paysage donne en échange n'est pas qu'un pis-aller : la largeur du
+/// graphe est ce qui porte la résolution de l'écart, et elle passe de 390 à plus
+/// de 600 points. On lit une avance de 10 ms là où elle tenait dans deux pixels.
 struct MainView: View {
 
     @State private var engine = RhythmEngine()
@@ -9,35 +25,29 @@ struct MainView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
 
-    /// Sur iPhone, la hauteur est compacte en paysage et seulement là. La lire
-    /// dans l'environnement plutôt que d'interroger la scène a l'avantage
-    /// d'être observable : le bouton de rotation change d'icône tout seul.
-    @Environment(\.verticalSizeClass) private var verticalSizeClass
-    private var isLandscape: Bool { verticalSizeClass == .compact }
+    /// Part de la largeur laissée au bandeau de droite.
+    private static let sidebarShare: CGFloat = 1.0 / 3.0
 
     var body: some View {
-        NavigationStack {
-            content
-                .background(Color(uiColor: .systemGroupedBackground))
-                .navigationTitle("JustRhythm")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button {
-                            showSettings = true
-                        } label: {
-                            Image(systemName: "gearshape")
-                        }
-                        .accessibilityLabel(String(localized: "Settings"))
-                    }
+        GeometryReader { geometry in
+            HStack(spacing: 0) {
+                measurement(bottomInset: geometry.safeAreaInsets.bottom)
+                    .frame(width: immersive
+                           ? geometry.size.width
+                           : geometry.size.width * (1 - Self.sidebarShare))
+
+                if !immersive {
+                    sidebar
+                        .frame(width: geometry.size.width * Self.sidebarShare)
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
                 }
-                // « Masque tout le reste » inclut le titre et l'engrenage, qui
-                // survivaient jusqu'ici au passage en plein écran. (EX-072)
-                // Couché, les 44 points qu'ils occupent se prélèvent sur une
-                // hauteur totale d'environ 400 : ils ne sont plus seulement de
-                // trop, ils coûtent une seconde d'historique visible. (EX-136)
-                .toolbar(immersive ? .hidden : .visible, for: .navigationBar)
+            }
         }
+        .background(Color(uiColor: .systemGroupedBackground))
+        .safeAreaInset(edge: .bottom) { messageBar }
+        // Plus de NavigationStack : sa barre coûtait 44 points de haut sur les
+        // 400 disponibles, pour un titre que personne ne lit et un engrenage qui
+        // a désormais sa place dans le bandeau.
         .sheet(isPresented: $showSettings) {
             SettingsView(engine: engine)
         }
@@ -46,114 +56,50 @@ struct MainView: View {
         .onChange(of: scenePhase) { _, phase in
             if phase != .active && engine.running { engine.stop() }
         }
-        // Le paysage n'existe qu'en plein écran. (EX-136)
-        .onChange(of: immersive) { _, on in
-            if on {
-                Orientation.allow([.portrait, .landscapeLeft, .landscapeRight])
-            } else {
-                Orientation.pin(.portrait)
-            }
-        }
     }
 
     // =====================================================================
+    // Colonne de gauche : la mesure
+    // =====================================================================
 
-    @ViewBuilder private var content: some View {
-        if immersive {
-            immersiveLayout
-        } else {
-            standardLayout
-        }
-    }
-
-    private var standardLayout: some View {
-        VStack(spacing: 16) {
-            readout
-
-            scope
-                .frame(height: 300)
-                .background(Color(uiColor: .secondarySystemGroupedBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-
-            StatsGrid(engine: engine)
-
-            Spacer(minLength: 0)
-
-            transport
-        }
-        .padding(.horizontal, 16)
-        // Les voyants remplissent leur cadre de bord à bord, sans l'interligne
-        // qui aérait le chiffre qu'ils remplacent : sans cette marge, ils
-        // viennent toucher la barre de navigation.
-        .padding(.top, 28)
-        .safeAreaInset(edge: .bottom) { messageBar }
-    }
-
-    /// Mode plein écran : plus que la mesure. (EX-072)
+    /// Bande réservée au mot, au-dessus du graphe — et la même, vide, en dessous.
     ///
-    /// La zone de mesure est la même vue dans les deux modes, jamais une
-    /// seconde implémentation : seuls le cadrage et la densité changent.
-    private var immersiveLayout: some View {
-        ZStack {
-            Color(uiColor: .systemBackground).ignoresSafeArea()
+    /// C'est ce qui centre le graphe : empilé, il était poussé vers le bas par
+    /// le seul bloc qui le précédait, avec cinquante-six points au-dessus et
+    /// trente-deux en dessous. Deux bandes égales le remettent d'aplomb, et le
+    /// mot flotte dans celle du haut plutôt que d'occuper une ligne à lui.
+    private static let readoutBand: CGFloat = 32
 
-            scope.ignoresSafeArea()
-
-            VStack {
-                HStack {
-                    // Le pivot manuel n'est pas un doublon de la rotation
-                    // automatique : celle-ci ne se déclenche pas quand le verrou
-                    // d'orientation du système est actif, et le téléphone posé
-                    // sur un pupitre est précisément là où on l'active. (EX-136)
-                    Button {
-                        Orientation.pin(isLandscape ? .portrait : .landscapeRight)
-                    } label: {
-                        Image(systemName: isLandscape ? "iphone" : "iphone.landscape")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .frame(width: 44, height: 44)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(isLandscape
-                                        ? String(localized: "Back to portrait")
-                                        : String(localized: "Turn to landscape"))
-
-                    Spacer()
-                    Text(String(format: NSLocalizedString("%d bpm · %@", comment: ""),
-                               Int(engine.settings.bpm), engine.settings.subdivision.shortLabel))
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
+    private func measurement(bottomInset: CGFloat) -> some View {
+        scope
+            .background(immersive ? Color.clear
+                        : Color(uiColor: .secondarySystemGroupedBackground))
+            .clipShape(RoundedRectangle(cornerRadius: immersive ? 0 : 12,
+                                        style: .continuous))
+            // Le graphe déborde jusqu'aux bords physiques en plein écran :
+            // couché, l'encoche mange une soixantaine de points sur un côté, et
+            // c'est la largeur qui porte la résolution de l'écart.
+            .ignoresSafeArea(edges: immersive ? .all : [])
+            .padding(.top, immersive ? 0 : Self.readoutBand)
+            // La bande basse est amputée de la barre d'accueil. Sans cela le
+            // graphe serait centré dans la zone sûre mais pas sur le verre : la
+            // quinzaine de points qu'iOS réserve en bas est du vide comme un
+            // autre pour l'œil, et le cadre paraissait tomber trop bas.
+            .padding(.bottom, immersive ? 0 : max(0, Self.readoutBand - bottomInset))
+            .overlay(alignment: .top) {
+                if !immersive {
+                    readout.frame(height: Self.readoutBand)
                 }
-                .padding(.horizontal, 20)
-
-                Spacer()
-
-                HStack {
-                    // Le total joué, comme dans la rangée de statistiques : le
-                    // pourcentage qui suit, lui, porte sur la fenêtre.
-                    Text(engine.stats.count > 0
-                         ? String(format: NSLocalizedString("%d notes · %d %%", comment: ""),
-                                  engine.stats.played, Int(engine.stats.inZone))
-                         : "—")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
-                    Spacer()
-                    Button { engine.toggle() } label: {
-                        Image(systemName: engine.running ? "stop.fill" : "play.fill")
-                            .font(.title3)
-                            .frame(width: 52, height: 52)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .buttonBorderShape(.circle)
-                    .tint(engine.running ? .secondary : .accentColor)
-                    .disabled(engine.settings.syncStart && !engine.running)
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 8)
             }
-        }
+            .padding(.leading, immersive ? 0 : 16)
+            // Une gouttière côté bandeau : sans elle, le cadre du graphe venait
+            // buter contre les commandes.
+            .padding(.trailing, immersive ? 0 : 6)
+            // Posée en dehors du débordement : les commandes, elles, doivent
+            // rester en deçà de l'encoche et de la barre d'accueil.
+            .overlay(alignment: .bottom) {
+                if immersive { immersiveControls }
+            }
     }
 
     private var scope: some View {
@@ -166,30 +112,62 @@ struct MainView: View {
             }
     }
 
+    /// En plein écran le bandeau disparaît : marche/arrêt doit rester à portée
+    /// de pouce, sans quoi le mode ne servirait qu'à regarder. (EX-091)
+    private var immersiveControls: some View {
+        // Le décompte de notes et le pourcentage de la séance sont partis avec
+        // le carré de statistiques, et pour la même raison : ils parlent de ce
+        // qui est déjà joué. Il ne reste que ce qui sert à jouer.
+        HStack {
+            Spacer()
+
+            Text(String(format: NSLocalizedString("%d bpm · %@", comment: ""),
+                        Int(engine.settings.bpm), engine.settings.subdivision.shortLabel))
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            Button { engine.toggle() } label: {
+                Image(systemName: engine.running ? "stop.fill" : "play.fill")
+                    .font(.title3)
+                    .frame(width: 52, height: 52)
+            }
+            .buttonStyle(.borderedProminent)
+            .buttonBorderShape(.circle)
+            .tint(engine.running ? .secondary : .accentColor)
+            .disabled(engine.settings.syncStart && !engine.running)
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 8)
+    }
+
     // =====================================================================
     // Lecture instantanée (EX-066)
     // =====================================================================
 
+    /// Le mot seul, centré sur le fil à plomb. (EX-066)
+    ///
+    /// Les trois voyants ont été retirés à leur tour : ils disaient la même
+    /// chose que le mot, en demandant qu'on apprenne à les lire. Le mot, lui, se
+    /// lit sans convention — et il tient sur moins de hauteur, ce qui en paysage
+    /// se compte.
     private var readout: some View {
-        VStack(spacing: 6) {
-            BiasMeter(placement: engine.recentPlacement, tolerance: engine.tolerance)
-
-            Text(verdict)
-                .font(.title3.weight(.medium))
-                .foregroundStyle(currentTint)
-                .contentTransition(.opacity)
-                .animation(.easeOut(duration: 0.25), value: verdict)
-        }
-        .frame(maxWidth: .infinity)
-        .accessibilityElement(children: .combine)
+        Text(verdict)
+            .font(.title3.weight(.medium))
+            .foregroundStyle(currentTint)
+            .contentTransition(.opacity)
+            .animation(.easeOut(duration: 0.25), value: verdict)
+            .frame(maxWidth: .infinity)
+            .accessibilityElement()
+            .accessibilityLabel(String(localized: "Placement"))
+            .accessibilityValue(verdict)
     }
-
 
     // Tout ce bloc lit la fourchette glissante, et non l'écart de la dernière
     // note : celui-ci change à chaque frappe, au point d'être illisible en
     // jouant. (EX-066)
 
-
+    /// Vert quand la fourchette entière tient dans la zone, orange sinon. La
+    /// couleur ne porte rien seule : c'est le mot qu'elle teinte. (EX-117)
     private var currentTint: Color {
         guard let placement = engine.recentPlacement else { return .secondary }
         return placement.isWithin(engine.tolerance) ? Palette.onTime : Palette.offTime
@@ -197,8 +175,6 @@ struct MainView: View {
 
     private var verdict: String {
         guard let placement = engine.recentPlacement else {
-            // « milliseconds » servait d'unité sous le gros chiffre ; celui-ci
-            // est passé en dessous et porte désormais son unité.
             return engine.running ? String(localized: "play on the beat") : String(localized: "ready")
         }
         let tolerance = engine.tolerance
@@ -212,18 +188,40 @@ struct MainView: View {
     }
 
     // =====================================================================
-    // Transport : ce qu'on touche en jouant reste sur l'écran
+    // Colonne de droite : ce qu'on touche en jouant
     // =====================================================================
 
-    /// Vrai tant que l'horloge du clavier pilote le tempo : le régler à la
-    /// main n'aurait aucun effet, la valeur serait reprise au battement
-    /// suivant. Condition sur l'horloge reçue, et non sur le réglage de
-    /// synchro : un clavier qui envoie Start sans horloge laisse la main.
+    /// Vrai tant que l'horloge du clavier pilote le tempo : le régler à la main
+    /// n'aurait aucun effet, la valeur serait reprise au battement suivant.
     private var clockDriven: Bool { engine.clockBpm != nil }
 
-    private var transport: some View {
-        VStack(spacing: 14) {
-            HStack {
+    /// Ce qu'on touche en jouant, et rien d'autre. (EX-138)
+    ///
+    /// Le carré de statistiques a été retiré d'ici : quatre chiffres qui
+    /// décrivent ce qui vient d'être joué invitent à s'arrêter pour les lire,
+    /// alors que tout l'objet de cet écran est la correction en cours. Le moteur
+    /// continue de les tenir — ils reviendront avec l'export, où ils sont à leur
+    /// place. (EX-080 à EX-084)
+    ///
+    /// Plus de `ScrollView` non plus : ce qui reste tient partout, et deux
+    /// ressorts répartissent l'excédent — l'en-tête reste en haut, les commandes
+    /// descendent vers les pouces. (EX-091)
+    private var sidebar: some View {
+        VStack(spacing: 20) {
+            sidebarHeader
+            Spacer(minLength: 8)
+            tempoControls
+            startButton
+            Spacer(minLength: 8)
+            volumes
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 14)
+    }
+
+    private var sidebarHeader: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
                 Label {
                     Text(engine.midi.selected?.name ?? String(localized: "No keyboard"))
                         .lineLimit(1)
@@ -234,6 +232,21 @@ struct MainView: View {
                 .font(.footnote)
                 .foregroundStyle(engine.midi.sources.isEmpty ? .secondary : .primary)
 
+                Spacer(minLength: 0)
+
+                Button {
+                    showSettings = true
+                } label: {
+                    Image(systemName: "gearshape")
+                        .font(.body)
+                        .frame(width: 32, height: 32)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(String(localized: "Settings"))
+            }
+
+            HStack(spacing: 6) {
                 if engine.settings.syncStart {
                     Label(engine.externallyTriggered ? "synced" : "waiting for Start",
                           systemImage: engine.externallyTriggered
@@ -241,31 +254,30 @@ struct MainView: View {
                         .font(.caption2)
                         .foregroundStyle(engine.externallyTriggered ? Palette.onTime : .secondary)
                         .labelStyle(.titleAndIcon)
-                        .fixedSize()
-                        .layoutPriority(1)
+                        .lineLimit(1)
                 }
 
                 Text(engine.settings.subdivision.label)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 7).padding(.vertical, 2)
-                    .background(Color(uiColor: .tertiarySystemFill),
-                                in: Capsule())
-                    .fixedSize()
-                    .layoutPriority(1)
+                    .background(Color(uiColor: .tertiarySystemFill), in: Capsule())
+                    .lineLimit(1)
 
-                Spacer()
+                Spacer(minLength: 0)
 
                 if let note = engine.midi.lastNote {
                     Text(note)
-                        .font(.footnote.monospaced())
+                        .font(.caption2.monospaced())
                         .foregroundStyle(.secondary)
-                        .fixedSize()
-                        .layoutPriority(1)
                 }
             }
+        }
+    }
 
-            HStack(spacing: 16) {
+    private var tempoControls: some View {
+        VStack(spacing: 6) {
+            HStack(spacing: 12) {
                 Button {
                     engine.settings.bpm = max(30, engine.settings.bpm - 1)
                     engine.reanchor()
@@ -276,9 +288,12 @@ struct MainView: View {
                 .buttonBorderShape(.circle)
                 .disabled(clockDriven)
 
-                VStack(spacing: 2) {
-                    // Quand l'horloge du clavier est suivie, c'est elle qui
-                    // fait foi : afficher le tempo réglé serait mensonger.
+                // Sur une ligne et non l'un sous l'autre : couché, l'unité en
+                // légende coûtait une ligne de plus dans une colonne qui n'en a
+                // pas à donner.
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    // Quand l'horloge du clavier est suivie, c'est elle qui fait
+                    // foi : afficher le tempo réglé serait mensonger.
                     Text(engine.clockBpm.map { String(format: "%.0f", $0) }
                          ?? "\(Int(engine.settings.bpm))")
                         .font(.system(.title2, design: .rounded, weight: .medium))
@@ -286,7 +301,9 @@ struct MainView: View {
                     Text(engine.clockBpm != nil ? "bpm received" : "bpm")
                         .font(.caption2).foregroundStyle(.secondary)
                 }
-                .frame(width: 78)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .frame(maxWidth: .infinity)
 
                 Button {
                     engine.settings.bpm = min(240, engine.settings.bpm + 1)
@@ -297,49 +314,106 @@ struct MainView: View {
                 .buttonStyle(.bordered)
                 .buttonBorderShape(.circle)
                 .disabled(clockDriven)
-
-                Spacer()
-
-                Button { engine.toggle() } label: {
-                    Label(engine.running ? "Stop" : "Start",
-                          systemImage: engine.running ? "stop.fill" : "play.fill")
-                        .frame(minWidth: 96)
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .tint(engine.running ? .secondary : .accentColor)
-                .disabled(engine.settings.syncStart && !engine.running)
             }
 
+            // Sans `step:`. Il ne servait à rien — le setter arrondit déjà —
+            // mais iOS 26 dessine la piste des crans sous la glissière, et à
+            // deux cent dix crans sur deux cents points elle se fond en une
+            // barre grise continue : un ornement qui n'informe de rien.
             Slider(value: Binding(get: { engine.settings.bpm },
                                   set: { engine.settings.bpm = $0.rounded(); engine.reanchor() }),
-                   in: 30...240, step: 1) {
+                   in: 30...240) {
                 Text("Tempo")
-            } minimumValueLabel: {
-                Text("30").font(.caption2).foregroundStyle(.secondary)
-            } maximumValueLabel: {
-                Text("240").font(.caption2).foregroundStyle(.secondary)
             }
             .disabled(clockDriven)
-
-            HStack(spacing: 12) {
-                Image(systemName: engine.settings.clickEnabled
-                      ? "speaker.wave.2.fill" : "speaker.slash.fill")
-                    .foregroundStyle(.secondary)
-                    .onTapGesture { engine.settings.clickEnabled.toggle() }
-                    .accessibilityLabel(engine.settings.clickEnabled
-                                        ? String(localized: "Mute the click") : String(localized: "Enable the click"))
-
-                Slider(value: Binding(get: { engine.settings.volume },
-                                      set: { engine.settings.volume = $0 }),
-                       in: 0...1)
-                    .disabled(!engine.settings.clickEnabled)
-            }
         }
-        .padding(16)
-        .background(Color(uiColor: .secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .padding(.bottom, 8)
+    }
+
+    private var startButton: some View {
+        Button { engine.toggle() } label: {
+            Label(engine.running ? "Stop" : "Start",
+                  systemImage: engine.running ? "stop.fill" : "play.fill")
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.borderedProminent)
+        .controlSize(.large)
+        .tint(engine.running ? .secondary : .accentColor)
+        .disabled(engine.settings.syncStart && !engine.running)
+    }
+
+    /// Deux niveaux séparés, chacun avec sa coupure. (EX-137)
+    ///
+    /// Le clic et les notes ne se dosent pas ensemble : il faut que le clic
+    /// reste audible *sous* le jeu, et le rapport juste dépend du timbre choisi
+    /// autant que du morceau. Un curseur unique obligeait à choisir lequel des
+    /// deux on sacrifiait — et un seul des deux pouvait se taire.
+    ///
+    /// L'icône du module bascule le même interrupteur que les Réglages, et non
+    /// une seconde notion de silence : deux façons d'être éteint pour une même
+    /// voix, c'est l'assurance qu'un jour l'une contredise l'autre.
+    ///
+    /// Note de musique et non touches de piano : `pianokeys` sert déjà d'un cran
+    /// plus haut à dire qu'un clavier MIDI est reconnu, et il n'en existe de
+    /// toute façon aucune variante barrée.
+    private var volumes: some View {
+        VStack(spacing: 8) {
+            volumeRow(icon: engine.settings.clickEnabled
+                      ? "speaker.wave.2.fill" : "speaker.slash.fill",
+                      label: String(localized: "Click volume"),
+                      value: Binding(get: { engine.settings.clickVolume },
+                                     set: { engine.settings.clickVolume = $0 }),
+                      enabled: engine.settings.clickEnabled,
+                      iconAction: { engine.settings.clickEnabled.toggle() },
+                      iconHint: engine.settings.clickEnabled
+                          ? String(localized: "Mute the click")
+                          : String(localized: "Enable the click"))
+
+            volumeRow(icon: engine.settings.instrumentEnabled
+                      ? "music.note" : "music.note.slash",
+                      label: String(localized: "Instrument volume"),
+                      value: Binding(get: { engine.settings.instrumentVolume },
+                                     set: {
+                                         engine.settings.instrumentVolume = $0
+                                         engine.instrumentVolumeChanged()
+                                     }),
+                      enabled: engine.settings.instrumentEnabled,
+                      iconAction: {
+                          engine.settings.instrumentEnabled.toggle()
+                          // Le même appel que la bascule des Réglages : sans lui
+                          // les notes tenues continueraient de sonner après la
+                          // coupure, et le moteur audio resterait ouvert pour
+                          // personne.
+                          engine.instrumentSettingChanged()
+                      },
+                      iconHint: engine.settings.instrumentEnabled
+                          ? String(localized: "Mute the instrument")
+                          : String(localized: "Enable the instrument"))
+        }
+    }
+
+    private func volumeRow(icon: String,
+                           label: String,
+                           value: Binding<Double>,
+                           enabled: Bool,
+                           iconAction: @escaping () -> Void,
+                           iconHint: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .frame(width: 22)
+                .contentShape(Rectangle())
+                .onTapGesture { iconAction() }
+                .accessibilityLabel(iconHint)
+                .accessibilityAddTraits(.isButton)
+
+            Slider(value: value, in: 0...1) { Text(label) }
+                .disabled(!enabled)
+        }
+        // Le curseur du module reste visible quand celui-ci est coupé, grisé
+        // plutôt qu'absent : une commande qui disparaît fait sauter la
+        // disposition et laisse croire qu'on l'a rêvée.
+        .opacity(enabled ? 1 : 0.45)
     }
 
     @ViewBuilder private var messageBar: some View {
@@ -372,8 +446,7 @@ struct MessageBar: View {
                 // Sans `lineLimit` et avec `fixedSize` : le résumé tient sur une
                 // ligne aux tailles de texte courantes, mais s'il devait
                 // déborder — traduction plus longue, corps de texte agrandi — il
-                // passe à la ligne au lieu de se faire couper. C'est exactement
-                // ce qui manquait à l'ancien bandeau.
+                // passe à la ligne au lieu de se faire couper.
                 Text(message.summary)
                     .fixedSize(horizontal: false, vertical: true)
 
@@ -426,107 +499,6 @@ struct MessageBar: View {
     }
 }
 
-// =====================================================================
-
-/// Les quatre chiffres. (EX-080 à EX-083)
-struct StatsGrid: View {
-
-    let engine: RhythmEngine
-
-    private var hasData: Bool { engine.stats.count > 0 }
-    private var step: Double { engine.gridPeriod }
-
-    var body: some View {
-        HStack(spacing: 0) {
-            cell(String(localized: "Notes"),
-                 value: "\(engine.stats.played)",
-                 caption: sampleCaption)
-            divider
-            cell(String(localized: "Average"),
-                 value: hasData ? signed(engine.stats.mean) : "–",
-                 unit: hasData ? "ms" : nil)
-            divider
-            // « Dispersion » et non « Régularité » : c'est un écart-type, donc
-            // plus le nombre est grand, moins le jeu est régulier. L'ancien
-            // libellé se lisait à l'envers.
-            cell(String(localized: "Dispersion"),
-                 value: hasData ? String(format: "%.1f", engine.stats.sd * 1000) : "–",
-                 unit: hasData ? "ms" : nil,
-                 tint: dispersionTint)
-            divider
-            cell(String(localized: "In the zone"),
-                 value: hasData ? "\(Int(engine.stats.inZone))" : "–",
-                 unit: hasData ? "%" : nil)
-        }
-        .padding(.vertical, 12)
-        .background(Color(uiColor: .secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-    }
-
-    /// Taille de l'échantillon, affichée seulement quand la fenêtre glissante
-    /// sature. (EX-084)
-    ///
-    /// Tant que toutes les notes de la séance sont retenues, la préciser
-    /// n'apprendrait rien ; passé ce point, elle explique pourquoi les trois
-    /// autres cases ne décrivent plus toute la séance.
-    private var sampleCaption: String? {
-        guard engine.stats.played > engine.stats.count else { return nil }
-        return String(format: NSLocalizedString("%d kept", comment: ""), engine.stats.count)
-    }
-
-
-    /// Vert tant que la dispersion reste acceptable, orange au-delà.
-    private var dispersionTint: Color {
-        guard hasData else { return .primary }
-        return Regularity.isAcceptable(sd: engine.stats.sd, step: step)
-            ? Palette.onTime : Palette.offTime
-    }
-
-    private var divider: some View {
-        Divider().frame(height: 34)
-    }
-
-    private func signed(_ seconds: Double) -> String {
-        let ms = seconds * 1000
-        let sign = ms > 0.05 ? "+" : (ms < -0.05 ? "−" : "")
-        return sign + String(format: "%.1f", abs(ms))
-    }
-
-    private func cell(_ title: String,
-                      value: String,
-                      unit: String? = nil,
-                      tint: Color = .primary,
-                      caption: String? = nil) -> some View {
-        VStack(spacing: 3) {
-            Text(title)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-
-            HStack(alignment: .firstTextBaseline, spacing: 2) {
-                Text(value)
-                    .font(.system(.body, design: .rounded, weight: .medium))
-                    .monospacedDigit()
-                    .foregroundStyle(tint)
-                if let unit {
-                    Text(unit).font(.caption2).foregroundStyle(.secondary)
-                }
-            }
-            .lineLimit(1)
-            .minimumScaleFactor(0.6)
-
-            // Ligne toujours présente, même vide : sans cela les quatre
-            // cellules n'auraient pas la même hauteur.
-            Text(caption ?? " ")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-                .monospacedDigit()
-        }
-        .frame(maxWidth: .infinity)
-        .accessibilityElement(children: .combine)
-    }
-}
 
 #Preview {
     MainView()

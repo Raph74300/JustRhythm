@@ -28,6 +28,12 @@ final class MetronomeEngine {
         var anchorFrame: Int64 = 0
         var pending: [Voice] = []
         var synthEvents: [SynthEvent] = []
+        /// Niveau du module sonore, indépendant de celui du clic. (EX-137)
+        ///
+        /// Ici plutôt que dans `SynthEvent` : c'est une valeur, pas un
+        /// événement, et un curseur qu'on fait glisser en produirait des
+        /// centaines à la seconde dans une file dimensionnée pour des notes.
+        var synthGain: Float = 1
         /// Nombre de fois qu'un garde-fou a dû jeter du travail en retard.
         /// Sert à transformer une panne silencieuse en symptôme lisible.
         var overloads = 0
@@ -174,6 +180,7 @@ final class MetronomeEngine {
                 }
             }
             shared.synthEvents.removeAll(keepingCapacity: true)
+            let synthGain = shared.synthGain
             let base = shared.frames
             shared.frames += Int64(frames)
             os_unfair_lock_unlock(lock)
@@ -185,12 +192,19 @@ final class MetronomeEngine {
             var sounded = false
             if let scratch = self?.scratch, frames <= self?.scratchCapacity ?? 0 {
                 scratch.update(repeating: 0, count: frames)
+                // Le rendu a lieu même à volume nul : les enveloppes doivent
+                // continuer de descendre, sinon une note coupée au curseur
+                // repartirait à son niveau d'attaque en le remontant.
                 sounded = synth.render(into: scratch, frames: frames)
-                if sounded {
+                if sounded && synthGain > 0 {
                     for buffer in buffers {
                         guard let out = buffer.mData?.assumingMemoryBound(to: Float.self) else { continue }
                         for frame in 0..<frames {
-                            out[frame] += Float(Self.softClip(scratch[frame]))
+                            // Le gain s'applique **après** la saturation douce,
+                            // et non avant : appliqué avant, il déplacerait le
+                            // seuil d'écrêtage et le timbre changerait avec le
+                            // niveau. (EX-137)
+                            out[frame] += Float(Self.softClip(scratch[frame])) * synthGain
                         }
                     }
                 }
@@ -304,6 +318,16 @@ final class MetronomeEngine {
         synth.stage(voice)
         os_unfair_lock_lock(lock)
         shared.synthEvents.append(.timbre)
+        os_unfair_lock_unlock(lock)
+    }
+
+    /// Niveau du module sonore, indépendant de celui du clic. (EX-137)
+    ///
+    /// Appelable moteur arrêté : la valeur vit dans l'état partagé et attend le
+    /// prochain démarrage, ce qui évite de la reposer à chaque `start()`.
+    func setInstrumentVolume(_ volume: Float) {
+        os_unfair_lock_lock(lock)
+        shared.synthGain = max(0, min(1, volume))
         os_unfair_lock_unlock(lock)
     }
 

@@ -9,7 +9,6 @@ struct SettingsView: View {
 
     let engine: RhythmEngine
     @Environment(\.dismiss) private var dismiss
-    @State private var confirmReset = false
 
     private var s: Settings { engine.settings }
 
@@ -32,7 +31,11 @@ struct SettingsView: View {
                 syncSection
                 instrumentSection
                 alignmentSection
-                dataSection
+                // La section Données est masquée le temps que les statistiques
+                // trouvent leur place : plus rien ne les affiche depuis que le
+                // bandeau a été désencombré, et un bouton qui efface ce qu'on ne
+                // voit nulle part ne veut rien dire. Elle reviendra avec
+                // l'export. (EX-085)
                 aboutSection
             }
             .navigationTitle("Settings")
@@ -256,34 +259,14 @@ struct SettingsView: View {
             }
 
 
-            // (EX-084)
-            VStack(alignment: .leading, spacing: 6) {
-                LabeledContent("Statistics window") {
-                    Text("\(s.statsWindow) notes").monospacedDigit()
-                }
-                Slider(value: Binding(get: { Double(s.statsWindow) },
-                                      set: { s.statsWindow = Int(($0 / 10).rounded() * 10) }),
-                       in: 20...1000, step: 10)
-            }
+            // La fenêtre statistique est masquée avec les chiffres qu'elle
+            // dimensionne : elle ne pilotait plus rien de visible, exactement
+            // comme le bouton d'effacement. Le réglage continue d'exister et de
+            // se conserver ; il redeviendra utile avec l'export. (EX-084)
         } header: {
             Text("Measurement")
         } footer: {
             Text("The graph is one beat wide, always — so what you see means the same at every subdivision. Grey is out of reach: a note further off belongs to the next grid step. Orange is what your grid can measure, green is the “right” zone, and the note values along the bottom read your error as an eighth, a sixteenth, a thirty-second.\n\nThe zone is a share of the grid rather than a fixed delay, and never narrower than 20 ms. Open it up for a beginner: widening it moves the green band and the percentage, never the measurement.\n\nThe statistics window keeps the summary on your recent notes.")
-        }
-    }
-
-    private var dataSection: some View {
-        Section {
-            Button("Clear statistics", role: .destructive) {
-                confirmReset = true
-            }
-            .confirmationDialog("Clear this session's statistics?",
-                                isPresented: $confirmReset, titleVisibility: .visible) {
-                Button("Clear", role: .destructive) { engine.resetStats() }
-                Button("Cancel", role: .cancel) { }
-            }
-        } footer: {
-            Text("The counters reset to zero. The metronome isn't stopped.")
         }
     }
 

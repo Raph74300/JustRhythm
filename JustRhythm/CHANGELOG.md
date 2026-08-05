@@ -8,6 +8,25 @@ and this project aligns its version numbers with the requirements document
 
 ## [Unreleased]
 
+## [2.8] — 2026-08-04
+
+### Fixed
+- **The note marker stops lying about the zone's edge** — Reported as notes sounding in "mute the others" while sitting slightly outside the green band. The sound gate and the drawn edge use the same number — verified at every tempo, the difference is zero — but the marker was four points wide and centred on its deviation, so it overflowed the point it designates by two points on each side. On sixteenths, where the twenty-millisecond floor leaves the zone about ten points wide either side of the line, those two points are a fifth of it: a note comfortably inside looked like it was biting the edge. The marker is now two points wide, and the zone's hairlines are drawn **over** the notes rather than under them — a reference a datum can cover is not a reference.
+- **Internal documents no longer ship inside the app** — The requirements spreadsheet, the changelog, the README, both user manuals, the publication guide, the tooling scripts and the App Store screenshots were all being copied into the app bundle by the synchronized file group. An `.ipa` unzips; the spec and its decision log would have travelled with the app. Excluded from the target.
+
+### Changed
+- **The app lies on its side, everywhere** — Landscape is no longer reserved for full-screen mode; it is the only orientation, settings sheet included. A cable, even a right-angled one, butts against the music stand while the phone stands upright. Landscape-in-full-screen-only did not solve it: you still had to stand the phone up to change a tempo. (EX-004)
+- **The measuring screen is two columns** — Two thirds on the left for the graph and the one-word readout, one third on the right for keyboard, subdivision, tempo, Start and the two volumes. Stacked vertically none of it fits in the 400 points a screen on its side has to give. The navigation bar goes with the change — 44 of those points for a title nobody reads — and the gear moves into the sidebar. The trade is not a consolation prize: the graph's width is what carries the resolution of the deviation, and it goes from 390 points to more than 600. A 10 ms lead used to land inside two pixels. (EX-138)
+- **The readout is the word alone, plumb on the line** — The three tuner lights said what the word says while asking to be learned first, and they cost thirty-six points of height against eighteen. Sitting to their right, the word was pushed off the graph's vertical line; alone, it falls on it within a point. The verdict became the readout's accessibility value, so nothing was lost for VoiceOver. (EX-066)
+- **The "right" zone percentage sits on the pictogram line** — It labels a zone, not a graduation, and nothing tied it to a line of its own. The ruler drops from 50 points to 36, and the graph gets fourteen points of scrolling back.
+
+### Added
+- **Separate volumes for the click and the instrument, each with its own mute** — They never dosed together: the click has to stay audible under the playing, and the right ratio depends on the timbre as much as on the piece, so a single slider meant choosing which of the two to sacrifice. The module's gain is applied after the soft clip, not before — before, it would have moved the clipping threshold and the timbre would have changed with the level. It defaults to maximum, which is exactly the level the module had when it was not adjustable, so the slider can only attenuate and nothing can be made to clip. The note icon mutes the module using the same switch the Settings sheet owns, not a second notion of silence. (EX-137)
+
+### Removed
+- **The statistics leave the playing screen** — The four figures, the full-screen counter, and the Settings "Data" section that erased them. Four figures describing what has just been played invite you to stop and read them, while the whole point of that screen is the gesture in progress. The engine still computes everything; they come back with the export, where reading them is the intent. (EX-080 to EX-083 and EX-085 to phase 2, EX-088)
+- **The tempo slider's step track** — `step: 1` over 30 to 240 is two hundred and ten notches drawn across two hundred points, which renders as a solid grey bar. The notches were never needed: the binding already rounds.
+
 ## [2.7] — 2026-07-31
 
 ### Changed
