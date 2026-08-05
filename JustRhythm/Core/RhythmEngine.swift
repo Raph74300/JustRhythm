@@ -138,6 +138,13 @@ final class RhythmEngine {
     /// Position absolue dans la grille : c'est elle qui dit le temps fort.
     private var gridPosition: Int { anchorStep + stepIndex }
 
+    /// Instant du dernier pas réellement émis, pour ne pas le réémettre.
+    ///
+    /// Le planificateur travaille 200 ms d'avance. Un recalage d'horloge qui
+    /// repartirait du seul instant courant réémettrait donc tout ce que ces
+    /// 200 ms contenaient déjà — c'est le doublon.
+    private var scheduledThrough: Double = -1
+
     /// Noires reçues depuis le message Start, pour situer l'ancre dans la
     /// mesure. Le Start signifie « depuis le début » : il donne donc le premier
     /// temps, et tout se compte à partir de là.
@@ -333,6 +340,9 @@ final class RhythmEngine {
             anchorStep = 0
             stepIndex = 0
             nextStep = anchor
+            // Aucun pas émis pour cette séance : la valeur d'avant ne dit plus
+            // rien de cette grille-ci.
+            scheduledThrough = -1
 
             // Un départ externe est déjà passé de quelques millisecondes quand on
             // le traite : on avance jusqu'au premier pas encore programmable,
@@ -489,6 +499,7 @@ final class RhythmEngine {
                                        volume: Float(settings.clickVolume))
                 }
                 scheduled.append(Beat(time: nextStep, isMain: isMain))
+                scheduledThrough = nextStep
                 stepIndex += 1
                 nextStep = anchor + Double(stepIndex) * period
             }
@@ -573,7 +584,8 @@ final class RhythmEngine {
 
                 // Correction de phase : écart entre la noire reçue et le point de
                 // grille le plus proche, borné à 20 ms.
-                let expected = self.anchor + ((time - self.anchor) / newPeriod).rounded() * newPeriod
+                let steps = Int(((time - self.anchor) / newPeriod).rounded())
+                let expected = self.anchor + Double(steps) * newPeriod
                 let error = max(-0.020, min(0.020, time - expected))
 
                 // Réancrage local, stepIndex remis à 0, plutôt que recalculer
@@ -585,9 +597,38 @@ final class RhythmEngine {
                 // correction, l'erreur ne peut plus être amplifiée par la
                 // durée de la séance, seulement par l'écart borné ci-dessus.
                 self.anchor = expected + error
+                // Le rang du nouvel ancrage suit son déplacement. Sans cette
+                // ligne, `anchorStep` restait à zéro toute la séance et
+                // `gridPosition` se réduisait à `stepIndex`, remis à zéro à
+                // chaque noire reçue — exactement le défaut que ce champ avait
+                // été introduit pour corriger, à ceci près qu'il n'était pas
+                // tenu. Invisible en régime établi, où l'ancre avance
+                // d'exactement une subdivision et où le compte reste un multiple
+                // de la subdivision par accident. Il se voit dès que ce n'est
+                // plus le cas : un tempo changé au clavier fait sauter l'ancre
+                // d'un nombre quelconque de pas, et le temps fort — donc aussi
+                // le clic, qui ne sonne que sur lui — tombe alors à côté.
+                self.anchorStep += steps
                 self.stepIndex = 0
                 self.nextStep = self.anchor
-                while self.nextStep < HostClock.now + 0.02 {
+
+                // Le rattrapage repart de ce qui a déjà été émis, et non du seul
+                // instant courant.
+                //
+                // C'était le doublon : le planificateur programme 200 ms
+                // d'avance, ne remonter que jusqu'à « maintenant + 20 ms »
+                // réémettait donc tout ce que ces 180 ms contenaient — un pas
+                // par noire reçue, mesuré à sept doublons en six secondes. À
+                // l'écran, deux lignes de subdivision à quelques millisecondes
+                // l'une de l'autre ; à l'oreille, un clic double sur les temps
+                // forts, qui passe inaperçu quand le clic est coupé.
+                //
+                // La demi-période de marge absorbe la correction de phase,
+                // bornée à 20 ms : un pas replacé de quelques millisecondes
+                // reste le même pas, pas un nouveau.
+                let dejaEmis = self.scheduledThrough + newPeriod / 2
+                let plancher = max(HostClock.now + 0.02, dejaEmis)
+                while self.nextStep < plancher {
                     self.stepIndex += 1
                     self.nextStep = self.anchor + Double(self.stepIndex) * newPeriod
                 }

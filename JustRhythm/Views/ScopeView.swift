@@ -71,6 +71,12 @@ struct ScopeView: View {
                   window: window, reachable: reachable, tolerance: tolerance)
 
         // Temps du métronome qui descendent. (EX-068)
+        //
+        // Rien à l'arrêt, et c'est voulu : la grille absente dit d'un coup d'œil
+        // qu'aucune séance ne tourne. Les notes déjà jouées, elles, finissent de
+        // défiler — elles appartiennent à la séance précédente, pas à l'état
+        // courant. Signalé une fois comme un défaut, tranché comme une
+        // fonctionnalité : ne pas « corriger ».
         if engine.running {
             for beat in engine.beats {
                 let y = (now - beat.time) * pxPerSecond
@@ -88,11 +94,16 @@ struct ScopeView: View {
             let dx = min(max(hit.delta * scale, -size.width / 2 + 8), size.width / 2 - 8)
             let fade = max(0.2, 1 - y / plotHeight)
 
-            var link = Path()
-            link.move(to: CGPoint(x: cx, y: y))
-            link.addLine(to: CGPoint(x: cx + dx, y: y))
-            context.stroke(link, with: .color(Palette.grid.opacity(fade)), lineWidth: 0.5)
-
+            // Plus de trait de rappel vers le fil à plomb.
+            //
+            // Il n'a jamais rien appris : la position du repère donne l'écart,
+            // et la règle en donne la valeur en durée de note. En échange il
+            // ajoutait à l'écran, par note jouée, un filet horizontal de la même
+            // épaisseur qu'une ligne de subdivision, dans un gris voisin, mais
+            // jusqu'à cinq fois plus opaque. En jouant serré, la grille
+            // paraissait se dédoubler — le défaut signalé. Le teinter de la
+            // couleur de sa note a été essayé : cela l'a rendu plus voyant
+            // encore, donc pire.
             let tint = Palette.tint(for: hit.delta, tolerance: engine.tolerance)
             let half: CGFloat = 7
             // Quatre points de large.
