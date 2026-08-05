@@ -9,6 +9,12 @@ struct MainView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
 
+    /// Sur iPhone, la hauteur est compacte en paysage et seulement là. La lire
+    /// dans l'environnement plutôt que d'interroger la scène a l'avantage
+    /// d'être observable : le bouton de rotation change d'icône tout seul.
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    private var isLandscape: Bool { verticalSizeClass == .compact }
+
     var body: some View {
         NavigationStack {
             content
@@ -25,6 +31,12 @@ struct MainView: View {
                         .accessibilityLabel(String(localized: "Settings"))
                     }
                 }
+                // « Masque tout le reste » inclut le titre et l'engrenage, qui
+                // survivaient jusqu'ici au passage en plein écran. (EX-072)
+                // Couché, les 44 points qu'ils occupent se prélèvent sur une
+                // hauteur totale d'environ 400 : ils ne sont plus seulement de
+                // trop, ils coûtent une seconde d'historique visible. (EX-136)
+                .toolbar(immersive ? .hidden : .visible, for: .navigationBar)
         }
         .sheet(isPresented: $showSettings) {
             SettingsView(engine: engine)
@@ -33,6 +45,14 @@ struct MainView: View {
         .persistentSystemOverlays(immersive ? .hidden : .automatic)
         .onChange(of: scenePhase) { _, phase in
             if phase != .active && engine.running { engine.stop() }
+        }
+        // Le paysage n'existe qu'en plein écran. (EX-136)
+        .onChange(of: immersive) { _, on in
+            if on {
+                Orientation.allow([.portrait, .landscapeLeft, .landscapeRight])
+            } else {
+                Orientation.pin(.portrait)
+            }
         }
     }
 
@@ -81,6 +101,24 @@ struct MainView: View {
 
             VStack {
                 HStack {
+                    // Le pivot manuel n'est pas un doublon de la rotation
+                    // automatique : celle-ci ne se déclenche pas quand le verrou
+                    // d'orientation du système est actif, et le téléphone posé
+                    // sur un pupitre est précisément là où on l'active. (EX-136)
+                    Button {
+                        Orientation.pin(isLandscape ? .portrait : .landscapeRight)
+                    } label: {
+                        Image(systemName: isLandscape ? "iphone" : "iphone.landscape")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(isLandscape
+                                        ? String(localized: "Back to portrait")
+                                        : String(localized: "Turn to landscape"))
+
                     Spacer()
                     Text(String(format: NSLocalizedString("%d bpm · %@", comment: ""),
                                Int(engine.settings.bpm), engine.settings.subdivision.shortLabel))
@@ -306,14 +344,85 @@ struct MainView: View {
 
     @ViewBuilder private var messageBar: some View {
         if let message = engine.message {
-            Text(message)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(.thinMaterial)
+            MessageBar(message: message) { engine.message = nil }
         }
+    }
+}
+
+// =====================================================================
+
+/// Le bandeau du bas : un résumé d'une ligne, le reste derrière un appui.
+/// (EX-135)
+struct MessageBar: View {
+
+    let message: EngineMessage
+    let onDismiss: () -> Void
+
+    @State private var expanded = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var hasDetail: Bool { message.detail != nil }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Image(systemName: message.severity.icon)
+                    .foregroundStyle(message.severity == .warning ? .orange : .secondary)
+
+                // Sans `lineLimit` et avec `fixedSize` : le résumé tient sur une
+                // ligne aux tailles de texte courantes, mais s'il devait
+                // déborder — traduction plus longue, corps de texte agrandi — il
+                // passe à la ligne au lieu de se faire couper. C'est exactement
+                // ce qui manquait à l'ancien bandeau.
+                Text(message.summary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Spacer(minLength: 0)
+
+                if hasDetail {
+                    Image(systemName: "chevron.down")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .rotationEffect(.degrees(expanded ? 180 : 0))
+                }
+
+                Button(action: onDismiss) {
+                    Image(systemName: "xmark")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        // La cible tactile fait le minimum recommandé ; l'icône,
+                        // elle, reste discrète.
+                        .frame(width: 44, height: 24)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(String(localized: "Dismiss the message"))
+            }
+
+            if expanded, let detail = message.detail {
+                Text(detail)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .font(.caption)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.leading, 16)
+        .padding(.trailing, 4)
+        .padding(.vertical, 8)
+        .background(.thinMaterial)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            guard hasDetail else { return }
+            withAnimation(reduceMotion ? .none : .easeInOut(duration: 0.2)) {
+                expanded.toggle()
+            }
+        }
+        // Un nouveau message repart replié : sans cela, un avertissement long
+        // s'ouvrirait tout seul parce que le précédent avait été déplié.
+        .onChange(of: message) { _, _ in expanded = false }
+        .accessibilityElement(children: .combine)
+        .accessibilityHint(hasDetail ? String(localized: "Tap to read the details") : "")
     }
 }
 

@@ -53,7 +53,7 @@ A hairline marks each boundary, so the information never rests on colour alone.
 
 Along the bottom, a **ruler in note values**: half the width is an eighth note, a quarter a sixteenth, an eighth a thirty-second. You read your error as music — "late by a sixteenth" — rather than in milliseconds. In triplet mode the marks move to a third and a sixth of a beat, carrying a 3. Marks falling in the grey are dimmed: they exist, but your grid cannot reach them.
 
-**Tap the graph** for full-screen mode.
+**Tap the graph** for full-screen mode. There, and only there, you can lay the phone on its side: turn it, or tap the icon at the top left if iOS's rotation lock is on — which it often is on a phone propped up on a music stand. Portrait comes back on its own when you leave full screen.
 
 Every note is measured on its own: there is no chord grouping. The notes of a chord therefore appear separately, and that is deliberate — you see at the same time whether the chord is *together*, which grouping would hide. It also stops a slightly overlapping legato from being swallowed.
 
@@ -70,7 +70,7 @@ Every note is measured on its own: there is no chord grouping. The notes of a ch
 - **Start/Stop**
 - Click mute toggle and volume slider
 
-A message may appear just above the transport bar — e.g. a warning that your audio output is adding delay (typical with wireless speakers/headphones), or that a keyboard disconnected.
+A message may appear just above the transport bar — e.g. a warning that your audio output is adding delay (typical with wireless speakers/headphones), or that no MIDI clock is following a synced start. It fits on one line: **tap it** to read the full explanation, which tells you what to do, and the cross to clear it. A message goes away anyway when you stop the session it describes.
 
 ---
 

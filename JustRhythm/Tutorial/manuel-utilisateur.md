@@ -55,7 +55,7 @@ Un filet marque chaque frontière, pour que l'information ne repose pas sur la c
 
 En bas, une **règle en valeurs de note** : la demi-largeur vaut une croche, le quart une double-croche, le huitième une triple-croche. Tu lis donc ton écart en musique — « en retard d'une double-croche » — et non en millisecondes. En triolets, les repères passent au tiers et au sixième de temps, marqués d'un 3. Ceux qui tombent dans le gris sont estompés : ils existent, mais ta grille ne peut pas les atteindre.
 
-**Touche le graphe** pour passer en plein écran.
+**Touche le graphe** pour passer en plein écran. Là, et là seulement, tu peux coucher le téléphone : tourne-le, ou touche l'icône en haut à gauche si le verrou de rotation d'iOS est actif — ce qui est souvent le cas d'un téléphone posé sur un pupitre. Le portrait revient de lui-même quand tu quittes le plein écran.
 
 Chaque note est mesurée pour elle-même : il n'y a pas de regroupement d'accord. Les notes d'un accord apparaissent donc séparément, et c'est voulu — tu vois du même coup si l'accord est *ensemble*, ce qu'un regroupement masquerait. Cela évite aussi qu'un legato un peu chevauchant se fasse avaler.
 
@@ -72,7 +72,7 @@ Chaque note est mesurée pour elle-même : il n'y a pas de regroupement d'accord
 - **Démarrer / Arrêter**
 - L'interrupteur de coupure du clic et son volume
 
-Un message peut apparaître juste au-dessus de la barre de transport — un avertissement sur le retard de ta sortie audio (typique d'une enceinte ou d'un casque sans fil), ou la déconnexion d'un clavier.
+Un message peut apparaître juste au-dessus de la barre de transport — un avertissement sur le retard de ta sortie audio (typique d'une enceinte ou d'un casque sans fil), ou l'absence d'horloge MIDI derrière un départ synchronisé. Il tient sur une ligne : **touche-le** pour lire l'explication complète, qui dit quoi faire, et la croix pour l'effacer. Un message disparaît de toute façon quand tu arrêtes la séance qu'il décrit.
 
 ---
 

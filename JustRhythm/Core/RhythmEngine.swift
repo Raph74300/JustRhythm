@@ -47,6 +47,50 @@ struct Stats {
     var inZone = 0.0        // pourcentage
 }
 
+/// Ce que l'application a à dire pendant qu'on joue. (EX-135)
+///
+/// Deux niveaux de lecture, et c'est tout l'intérêt : le résumé tient sur une
+/// ligne et se lit sans quitter le clavier des yeux, le paragraphe attend
+/// derrière un appui. Les explications d'origine étaient écrites longues à
+/// dessein — celle de l'horloge manquante désigne un réglage qui se trouve sur
+/// l'instrument, pas dans l'application, et la phrase entière est ce qui évite
+/// une demi-heure de recherche au mauvais endroit. Affichées d'un bloc en bas
+/// de l'écran de mesure, elles se faisaient couper à la première ligne : tout
+/// ce qui justifiait leur longueur disparaissait, et il ne restait qu'un début
+/// de phrase suivi de points de suspension.
+struct EngineMessage: Equatable {
+
+    /// Deux niveaux suffisent. La distinction est portée par la forme de
+    /// l'icône, jamais par sa seule couleur. (EX-117)
+    enum Severity {
+        case info
+        case warning
+
+        var icon: String {
+            switch self {
+            case .info: "info.circle"
+            case .warning: "exclamationmark.triangle"
+            }
+        }
+    }
+
+    let severity: Severity
+    /// Une ligne. Doit se suffire à lui-même : c'est le seul état visible tant
+    /// qu'on ne déplie pas.
+    let summary: String
+    /// Ce qu'il faut faire, ou pourquoi c'est arrivé. `nil` quand le résumé dit
+    /// déjà tout — on n'affiche alors aucun chevron.
+    var detail: String? = nil
+
+    static func info(_ summary: String, detail: String? = nil) -> EngineMessage {
+        EngineMessage(severity: .info, summary: summary, detail: detail)
+    }
+
+    static func warning(_ summary: String, detail: String? = nil) -> EngineMessage {
+        EngineMessage(severity: .warning, summary: summary, detail: detail)
+    }
+}
+
 @Observable
 final class RhythmEngine {
 
@@ -61,7 +105,7 @@ final class RhythmEngine {
     private(set) var stats = Stats()
     private(set) var lastDelta: Double?
     private(set) var outputLatency: Double = 0
-    var message: String?
+    var message: EngineMessage?
 
     /// Vrai quand le métronome a été déclenché par le clavier. (EX-053)
     private(set) var externallyTriggered = false
@@ -153,10 +197,12 @@ final class RhythmEngine {
         metronome.onInterruption = { [weak self] resumed in
             guard let self else { return }
             if resumed {
-                self.message = String(localized: "Session resumed after an interruption.")
+                self.message = .info(String(localized: "Session resumed after an interruption."))
             } else {
+                // Après `stop()`, qui efface : sinon le message serait emporté
+                // par la remise à zéro qu'il est justement là pour expliquer.
                 self.stop()
-                self.message = String(localized: "Session interrupted by the system.")
+                self.message = .warning(String(localized: "Session interrupted by the system."))
             }
         }
         // Posée avant l'ouverture du client : le premier balayage retrouve
@@ -262,12 +308,15 @@ final class RhythmEngine {
         do {
             try metronome.start()
         } catch {
-            message = String(format: NSLocalizedString("Audio unavailable: %@", comment: ""), error.localizedDescription)
+            message = .warning(String(localized: "Audio unavailable"),
+                               detail: error.localizedDescription)
             return
         }
         outputLatency = metronome.outputLatency
         message = outputLatency > 0.060
-            ? String(format: NSLocalizedString("Audio output delayed by %d ms — likely a wireless output, which will skew the average.", comment: ""), Int(outputLatency * 1000))
+            ? .warning(String(format: NSLocalizedString("Audio output delayed by %d ms", comment: ""),
+                              Int(outputLatency * 1000)),
+                       detail: String(localized: "Likely a wireless output, which will skew the average."))
             : nil
 
         hits.removeAll(); beats.removeAll(); deltas.removeAll()
@@ -305,6 +354,15 @@ final class RhythmEngine {
         guard running else { return }
         running = false
         externallyTriggered = false
+        // Un message décrit la séance en cours et meurt avec elle. (EX-135)
+        //
+        // Sans cela, l'avertissement d'horloge manquante restait affiché après
+        // l'arrêt, puis pendant tout le temps où l'on ne jouait pas, jusqu'au
+        // départ suivant : il finissait par décrire une situation révolue, sans
+        // que rien ne permette de s'en débarrasser. Les messages posés *après*
+        // un arrêt — l'interruption système — ne sont pas concernés, ils sont
+        // écrits une fois cette ligne passée.
+        message = nil
         lastBeatTime = nil; smoothedBeat = nil; clockBpm = nil
         timer?.cancel(); timer = nil
 
@@ -338,8 +396,8 @@ final class RhythmEngine {
             outputLatency = metronome.outputLatency
             metronome.loadInstrument(settings.instrumentVoice)
         } catch {
-            message = String(format: NSLocalizedString("Instrument unavailable: %@", comment: ""),
-                             error.localizedDescription)
+            message = .warning(String(localized: "Instrument unavailable"),
+                               detail: error.localizedDescription)
             settings.instrumentEnabled = false
         }
     }
@@ -392,7 +450,8 @@ final class RhythmEngine {
             outputLatency = metronome.outputLatency
             message = nil
         } catch {
-            message = String(format: NSLocalizedString("Audio unavailable: %@", comment: ""), error.localizedDescription)
+            message = .warning(String(localized: "Audio unavailable"),
+                               detail: error.localizedDescription)
             return
         }
         metronome.playTestClick(voice: settings.clickVoice, volume: Float(settings.volume))
@@ -546,7 +605,9 @@ final class RhythmEngine {
             guard let self, self.clockWatchToken == token,
                   self.running, self.externallyTriggered, self.clockBpm == nil
             else { return }
-            self.message = String(localized: "Started on the keyboard's Start message, but no MIDI clock is arriving. The tempo stays the one set here and will drift apart from your drum machine — enable clock transmission on the instrument.")
+            self.message = .warning(
+                String(localized: "No MIDI clock is arriving"),
+                detail: String(localized: "The session started on the keyboard's Start message, but no clock follows it. The tempo stays the one set here and will drift apart from your drum machine — enable clock transmission on the instrument."))
         }
     }
 
@@ -688,14 +749,17 @@ final class RhythmEngine {
 
         if lag > Self.lateThreshold {
             overloadReported = true
-            message = String(format: NSLocalizedString(
-                "Notes are being handled %d ms late — the app is not keeping up with the incoming stream. Their measured timing stays correct, but they may scroll off the graph before they are drawn.",
-                comment: ""), Int(lag * 1000))
+            message = .warning(
+                String(format: NSLocalizedString("Notes are being handled %d ms late", comment: ""),
+                       Int(lag * 1000)),
+                detail: String(localized: "The app is not keeping up with the incoming stream. Their measured timing stays correct, but they may scroll off the graph before they are drawn."))
             return
         }
         if metronome.overloadCount > 0 {
             overloadReported = true
-            message = String(localized: "The audio engine fell behind and some sound was dropped. Timing measurements are unaffected.")
+            message = .warning(
+                String(localized: "Some sound was dropped"),
+                detail: String(localized: "The audio engine fell behind. Timing measurements are unaffected."))
         }
     }
 
