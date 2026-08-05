@@ -95,19 +95,19 @@ struct ScopeView: View {
 
             let tint = Palette.tint(for: hit.delta, tolerance: engine.tolerance)
             let half: CGFloat = 7
-            // Deux points de large, et non quatre.
+            // Quatre points de large.
             //
-            // La largeur du repère ne porte aucune information : c'est son
-            // centre qui donne l'écart. Mais un repère de quatre points centré
-            // sur son écart déborde de deux points de part et d'autre du point
-            // qu'il désigne — et sur une grille fine, où la demi-zone juste ne
-            // fait qu'une dizaine de points, ces deux points valent un cinquième
-            // de la zone. Une note franchement dans les clous paraissait alors
-            // mordre sur le bord, et il devenait impossible de comprendre
-            // pourquoi elle avait sonné en mode « Étouffer les autres ».
+            // La largeur ne porte aucune information — c'est le centre du repère
+            // qui donne l'écart — et elle déborde donc de deux points de part et
+            // d'autre du point qu'elle désigne. L'amaigrir à deux points a été
+            // essayé pour cette raison, puis abandonné à l'usage : les notes
+            // devenaient trop discrètes en jouant, ce qui coûte plus que la
+            // précision gagnée au bord. C'est le filet de la zone, repassé
+            // par-dessus les repères juste en dessous, qui rend la frontière
+            // lisible sans avoir à rétrécir la donnée.
             context.fill(
-                Path(roundedRect: CGRect(x: cx + dx - 1, y: y - half, width: 2, height: half * 2),
-                     cornerRadius: 1),
+                Path(roundedRect: CGRect(x: cx + dx - 2, y: y - half, width: 4, height: half * 2),
+                     cornerRadius: 2),
                 with: .color(tint.opacity(fade)))
         }
 
