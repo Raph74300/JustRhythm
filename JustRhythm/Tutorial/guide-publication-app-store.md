@@ -102,7 +102,7 @@ Comment savoir quelles API sont utilisées : chercher dans le code (`Cmd+Shift+F
 ## 6. Réglages projet à vérifier avant l'archive
 
 **Orientation** (target → **General** → **Deployment Info**) :
-- Décocher toutes les orientations sauf celle réellement supportée (ex. **Portrait** seul)
+- Décocher toutes les orientations sauf celles réellement supportées. JustRhythm ne coche que **Landscape Left** et **Landscape Right** depuis la 2.8 ; une application couchée en permanence se déclare ici et nulle part ailleurs — inutile d'écrire du code d'orientation.
 - Puis, onglet **Info** → ajouter la clé **Requires full screen** (`UIRequiresFullScreen`) à `YES`
 
 Sans cette seconde étape, Xcode signale : *"All interface orientations must be supported unless the app requires full screen."*
@@ -117,16 +117,23 @@ Sans cette seconde étape, Xcode signale : *"All interface orientations must be 
 
 ### Captures d'écran — piège fréquent même en capturant sur un vrai iPhone
 
-App Store Connect exige des dimensions **exactes** pour la catégorie "iPhone 6,5 pouces" : `1242×2688`, `2688×1242`, `1284×2778` ou `2778×1284` px. Ces chiffres correspondent aux résolutions natives d'anciens iPhones (11 Pro Max, 12-14 Pro Max) — **pas** à la résolution native des iPhones récents. Une capture prise directement sur un iPhone actuel (ex. iPhone 15, résolution 1179×2556) est parfaitement nette mais **ne correspond à aucune des tailles acceptées**, et sera rejetée par App Store Connect avec l'erreur *"Les dimensions d'au moins une capture d'écran sont incorrectes."*
+App Store Connect exige des dimensions **exactes**. Deux catégories servent en pratique :
 
-Les proportions étant quasi identiques (écart ~0,2%), un simple redimensionnement vers la taille exacte ne provoque aucune déformation visible.
+| Catégorie | Portrait | Paysage |
+|---|---|---|
+| iPhone 6,9" — celle qu'on remplit aujourd'hui | `1320×2868` ou `1290×2796` | `2868×1320` ou `2796×1290` |
+| iPhone 6,5" — repli, toujours accepté | `1242×2688` ou `1284×2778` | `2688×1242` ou `2778×1284` |
+
+Ces chiffres correspondent aux résolutions natives de certains iPhones — **pas** à celle de ton téléphone. Une capture prise directement sur un iPhone 15 ou 16 (1179×2556, soit 2556×1179 couché) est parfaitement nette mais **ne correspond à aucune taille acceptée**, et sera refusée avec l'erreur *"Les dimensions d'au moins une capture d'écran sont incorrectes."*
+
+Les proportions sont quasi identiques (écart ~0,2 %). Le script redimensionne donc **proportionnellement** puis recadre les quelques pixels en trop, plutôt que de forcer les deux dimensions d'un coup : la déformation serait invisible, mais elle n'a aucune raison d'exister.
 
 **Script `resize-screenshots.sh`** (basé sur `sips`, natif macOS, aucune dépendance) :
 ```bash
 chmod +x resize-screenshots.sh
 ./resize-screenshots.sh "/chemin/vers/tes/captures"
 ```
-Détecte portrait/paysage automatiquement, redimensionne vers `1284×2778` ou `2778×1284`, sort dans un sous-dossier `AppStore-Ready` sans toucher aux originaux.
+Détecte portrait/paysage automatiquement et produit les deux tailles d'un coup, dans `conformes/6.9-inch` et `conformes/6.5-inch`, sans toucher aux originaux. Vérifie aussi l'absence de canal alpha, qu'App Store Connect refuse.
 
 ### Vidéo App Preview — contraintes bien plus strictes qu'une image
 

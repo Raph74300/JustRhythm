@@ -103,8 +103,14 @@ rouvrables — à ne pas reproposer comme des nouveautés :
   de rendez-vous du reste. Les statistiques (EX-080 à EX-083, EX-085) et la
   fenêtre statistique (EX-084) sont passées en phase 2 et ne s'affichent plus
   nulle part : le moteur les calcule toujours, elles reviendront là.
-- **Captures de l'App Store** : toutes en portrait, donc fausses depuis la 2.8.
-  À refaire avant toute soumission.
+- **Publication** : rien n'est publié. La 1.0 n'a jamais été validée et sa
+  demande a été retirée — l'application avait trop changé. La 2.8 sera donc une
+  **première** soumission, pas une mise à jour : le champ « Nouveautés »
+  n'existe pas, seule la Description compte. Le numéro de build continue
+  néanmoins de ne pouvoir que croître, des builds ayant déjà été envoyés.
+- **Captures de l'App Store** : refaites en paysage pour la 2.8, conformées en
+  6,9" et 6,5" dans `AppStore-Ready/conformes/`. Reste à flouter
+  « CVP-303 Port 1 », visible sur deux des trois.
 
 ## Reprendre après une perte de contexte
 
