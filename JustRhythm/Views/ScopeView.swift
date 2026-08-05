@@ -95,11 +95,30 @@ struct ScopeView: View {
 
             let tint = Palette.tint(for: hit.delta, tolerance: engine.tolerance)
             let half: CGFloat = 7
+            // Deux points de large, et non quatre.
+            //
+            // La largeur du repère ne porte aucune information : c'est son
+            // centre qui donne l'écart. Mais un repère de quatre points centré
+            // sur son écart déborde de deux points de part et d'autre du point
+            // qu'il désigne — et sur une grille fine, où la demi-zone juste ne
+            // fait qu'une dizaine de points, ces deux points valent un cinquième
+            // de la zone. Une note franchement dans les clous paraissait alors
+            // mordre sur le bord, et il devenait impossible de comprendre
+            // pourquoi elle avait sonné en mode « Étouffer les autres ».
             context.fill(
-                Path(roundedRect: CGRect(x: cx + dx - 2, y: y - half, width: 4, height: half * 2),
-                     cornerRadius: 2),
+                Path(roundedRect: CGRect(x: cx + dx - 1, y: y - half, width: 2, height: half * 2),
+                     cornerRadius: 1),
                 with: .color(tint.opacity(fade)))
         }
+
+        // Les bords de la zone juste, repassés **par-dessus** les notes.
+        //
+        // Ils sont la référence à laquelle on compare, et une référence qu'une
+        // donnée peut recouvrir n'en est plus une : un repère posé près du bord
+        // effaçait précisément le trait qui aurait permis de trancher. Le fil à
+        // plomb, juste en dessous, suit la même règle depuis toujours.
+        drawZoneEdges(context, cx: cx, height: plotHeight, scale: scale,
+                      window: window, reachable: reachable, tolerance: tolerance)
 
         // Le fil à plomb, par-dessus tout le reste. (EX-060)
         var pulse = 0.0
@@ -123,12 +142,9 @@ struct ScopeView: View {
     // Les trois zones
     // =====================================================================
 
-    /// Gris, orangé, vert — et un filet à chaque rupture.
-    ///
-    /// Les filets ne sont pas décoratifs : trois teintes portant seules le sens
-    /// contreviendraient à la règle qui interdit de confier une information à
-    /// la couleur (EX-117). Une frontière visible reste lisible en niveaux de
-    /// gris comme en contraste renforcé.
+    /// Gris, orangé, vert — les aplats seuls. Les filets qui marquent leurs
+    /// ruptures sont posés plus tard, par-dessus les notes, par
+    /// `drawZoneEdges`.
     private func drawBands(_ context: GraphicsContext, cx: CGFloat, height: CGFloat,
                            scale: CGFloat, window: Double,
                            reachable: Double, tolerance: Double) {
@@ -141,6 +157,22 @@ struct ScopeView: View {
         // laisser vide donnerait deux bandes claires de sens différent.
         context.fill(Path(CGRect(x: 0, y: 0, width: cx * 2, height: height)),
                      with: .color(Color(uiColor: .quaternarySystemFill)))
+
+        // Du plus large au plus étroit : chaque bande recouvre la précédente.
+        band(reachable, Palette.offTime.opacity(0.10))          // mesurable, hors zone
+        band(tolerance, Palette.onTime.opacity(0.14))           // zone juste
+    }
+
+    /// Les filets qui marquent chaque rupture, dessinés après les notes.
+    ///
+    /// Ils ne sont pas décoratifs : trois teintes portant seules le sens
+    /// contreviendraient à la règle qui interdit de confier une information à la
+    /// couleur (EX-117). Une frontière visible reste lisible en niveaux de gris
+    /// comme en contraste renforcé — encore faut-il qu'une note ne la recouvre
+    /// pas au moment précis où l'on cherche de quel côté elle tombe.
+    private func drawZoneEdges(_ context: GraphicsContext, cx: CGFloat, height: CGFloat,
+                               scale: CGFloat, window: Double,
+                               reachable: Double, tolerance: Double) {
         func edge(_ half: Double) {
             let w = half * scale
             for x in [cx - w, cx + w] {
@@ -148,11 +180,6 @@ struct ScopeView: View {
                              with: .color(Palette.grid))
             }
         }
-
-        // Du plus large au plus étroit : chaque bande recouvre la précédente.
-        band(reachable, Palette.offTime.opacity(0.10))          // mesurable, hors zone
-        band(tolerance, Palette.onTime.opacity(0.14))           // zone juste
-
         if reachable < window { edge(reachable) }
         edge(tolerance)
     }

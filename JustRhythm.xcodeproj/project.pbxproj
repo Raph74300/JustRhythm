@@ -15,6 +15,31 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
+				AppIcon.png,
+				AppStore-Ready/IMG_4862.PNG,
+				AppStore-Ready/IMG_4863.PNG,
+				AppStore-Ready/IMG_4864.PNG,
+				AppStore-Ready/conformes/6.5-inch/IMG_4862.png,
+				AppStore-Ready/conformes/6.5-inch/IMG_4863.png,
+				AppStore-Ready/conformes/6.5-inch/IMG_4864.png,
+				AppStore-Ready/conformes/6.9-inch/IMG_4862.png,
+				AppStore-Ready/conformes/6.9-inch/IMG_4863.png,
+				AppStore-Ready/conformes/6.9-inch/IMG_4864.png,
+				AppStore-Ready/floutees/IMG_4862.png,
+				AppStore-Ready/floutees/IMG_4863.png,
+				AppStore-Ready/floutees/IMG_4864.png,
+				CHANGELOG.md,
+				JustRhythm_App_Store_Content.md,
+				README.md,
+				Tools/adapt-icon.sh,
+				Tools/conform-preview-video.sh,
+				Tools/resize-screenshots.sh,
+				Tutorial/guide-publication-app-store.md,
+				Tutorial/instructions-projet.md,
+				Tutorial/manuel-utilisateur.md,
+				Tutorial/parcours-etapes.md,
+				Tutorial/user-manual.md,
+				cahier-des-charges-just-rhythm-natif.xlsx,
 			);
 			target = EA1BD7E8301754240071DFEF /* JustRhythm */;
 		};

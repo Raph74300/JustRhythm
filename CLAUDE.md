@@ -70,6 +70,23 @@ valeurs sont celles de ce clavier, pas des constantes :
   séquenceur joue mais présent quand l'instrumentiste joue. Quelques ms,
   hors de portée sans instrumentation externe.
 
+## Le groupe synchronisé embarque tout
+
+`PBXFileSystemSynchronizedRootGroup` copie dans le paquet de l'application
+**tout ce qu'il ne reconnaît pas comme code** — y compris le cahier des charges,
+les manuels, les scripts et les captures. Ils sont désormais déclarés en
+exception du target, mais la liste est **fichier par fichier** : la forme par
+dossier est acceptée par le fichier projet et reste sans effet, ce qui est le
+pire des cas, puisqu'elle rassure sans rien exclure.
+
+**Tout fichier ajouté à `Tutorial/`, `Tools/`, `AppStore-Ready/` ou à la racine
+de `JustRhythm/` repart donc dans le paquet tant qu'on ne l'a pas ajouté à
+`membershipExceptions`.** La vérification tient en une ligne, après un build :
+
+```bash
+find <chemin>/JustRhythm.app \( -name "*.md" -o -name "*.xlsx" -o -name "*.sh" \)
+```
+
 ## Orientation et disposition
 
 Depuis la 2.8 l'application est **entièrement en paysage**, réglages compris —
