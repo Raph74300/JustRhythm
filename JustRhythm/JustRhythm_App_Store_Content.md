@@ -167,7 +167,7 @@ This app requires a MIDI keyboard connected via USB to function — it analyzes 
 - [x] ~~Reserve domain name if necessary~~ — non applicable, convention Bundle ID `dev.oundjian.*` ne nécessite pas de domaine possédé
 - [ ] Confirmer le support réel de Bluetooth MIDI et Network MIDI avant de les mentionner publiquement
 - [x] Captures iPhone **en paysage** depuis une vraie séance (2.8 : plein écran, écran de mesure, Réglages) — conformées en 6,9" et 6,5" dans `AppStore-Ready/conformes/`
-- [ ] Flouter « CVP-303 Port 1 » sur les deux captures où il apparaît
+- [x] « CVP-303 Port 1 » flouté sur les deux captures où il apparaît (Réglages et bandeau de l'écran de mesure) — sources floutées dans `AppStore-Ready/floutees/`, les captures brutes restant intactes à côté
 - [ ] Vérifier la conformité aux App Store Guidelines (fait dans le cadre du parcours de publication)
 - [ ] Icône et images de preview déjà prêtes (voir guide de publication)
 
